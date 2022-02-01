@@ -70,9 +70,8 @@ class SecurePipe:
 
     def send(self, data):
         e = self.aes.encrypt(data)
-        leng = int.to_bytes(len(e), 8, "big")
-        print("Sending: " + str(len(self.aes.encrypt(leng))) + " bytes")
-        self.conn.sendall(self.aes.encrypt(leng))
+        length = int.to_bytes(len(e), 8, "big")
+        self.conn.sendall(self.aes.encrypt(length))
         self.conn.sendall(e)
         sleep(0.5)
 
@@ -122,7 +121,7 @@ class ChatServer:
         print("Securing connection")
         connection = SecurePipe(conn, server_side=True)
         print("Connection secured" if connection.secured else "Connection is not secured")
-        ClientHandler.ClientHandler(self, connection)
+        ClientHandler.ClientHandler(self, connection).handle()
         conn.close()
 
     def start(self):
@@ -130,5 +129,4 @@ class ChatServer:
 
     def stop(self):
         self.server.stop()
-
 
