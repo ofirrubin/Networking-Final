@@ -1,12 +1,12 @@
-import socket
-import threading
 from time import sleep
-
+import socket
 import rsa
+from Lib import AES
+from random import random
 
-import AES
-import ClientHandler
-from Chat import DatabaseConnection as Database
+
+def salt():
+    return str(random()).encode()
 
 
 class SecurePipe:
@@ -75,58 +75,23 @@ class SecurePipe:
         self.conn.sendall(e)
         sleep(0.5)
 
-    def recv(self):
+    def recv(self, ftimeout=None):
         try:
+            timeout = 0
+            if type(ftimeout) is int:
+                timeout = self.conn.gettimeout()
+                self.conn.settimeout(ftimeout)
             b = self.conn.recv(44)
+            if type(ftimeout) is int:
+                self.conn.settimeout(timeout)
             a = self.aes.decrypt(b)
             size = int.from_bytes(a, byteorder="big")
             a = self.conn.recv(size)
             return self.aes.decrypt(a)
         except ValueError:
             return b''
+        except socket.timeout:
+            raise BrokenPipeError("Timeout")
 
     def close(self):
         self.conn.close()
-
-
-class Server:
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
-        self.sock = socket.socket()
-        self.__running = False
-
-    def start(self, user_handler):
-        self.sock.bind((self.ip, self.port))
-        self.sock.listen(100)  # How many clients to listen, queue size.
-        self.__running = True
-        while self.__running is True:
-            client, addr = self.sock.accept()
-            threading.Thread(target=user_handler, args=(client, addr), daemon=False).start()
-
-    def stop(self):
-        self.__running = False
-
-
-class ChatServer:
-    def __init__(self, ip, port, **args):
-        self.ip = ip
-        self.port = port
-        self.server = Server(self.ip, self.port)
-        self.db = Database(**args)
-
-    def client_handler(self, conn, addr):
-        # User handler
-        print("<{ip}, {port}> Server: Connection from <{client}>".format(ip=self.ip, port=self.port, client=addr))
-        print("Securing connection")
-        connection = SecurePipe(conn, server_side=True)
-        print("Connection secured" if connection.secured else "Connection is not secured")
-        ClientHandler.ClientHandler(self, connection).handle()
-        conn.close()
-
-    def start(self):
-        self.server.start(user_handler=self.client_handler)
-
-    def stop(self):
-        self.server.stop()
-
