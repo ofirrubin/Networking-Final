@@ -11,41 +11,43 @@ class FTC:
     SYNTAX_ERROR = b"UNKNOWN_FORMAT"
     MAX_LENGTH = 4096
     BASE_LENGTH = 1024
+
     # although udp supports up to 65535 (such as on Windows),
     # I found that my PC (macOS) supports up to 9216 bytes, I settled on 4096.
 
-    def __init__(self, address, filename):
+    def __init__(self, address, filename, offset=0):
         self.filename = filename
         self.address = address
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.offset = 0
         self.length = self.BASE_LENGTH
-        self.data = b""
 
-    def request(self):
+    def __str__(self):
+        return str(self.offset) + " bytes of the file '" + self.filename + "' downloaded from " + str(self.address)
+
+    def request(self, callback):
         while self.length > 0:
             req = Request(self.filename, self.offset, self.length)
             resp, r_address, delta_time = self.timed_request(req)
+            self.length = 0
             if resp.valid(req) is True:
-                self.data += resp.data
+                self.offset += resp.length
+                callback(self, False, resp)
                 if resp.final(req) is True:
                     self.length = 0  # There is no need for further requests
                 else:
                     self.length = min(2 * self.length, self.MAX_LENGTH)
-                self.offset += resp.length
             else:
                 if resp.error == self.FILE_NOT_FOUND:
                     raise FileNotFoundError("File not found")
                 elif resp.error == self.SYNTAX_ERROR:
                     raise SyntaxError("Request syntax error")
                 self.length = max(resp.header_length + 1, int(self.length / 2) + 1)
-
-        self.length = len(self.data)
-        self.offset = self.length
+        callback(self, True, None)
 
     def request_updater(self, resp, dt):
         if resp.valid():
-            self.data += resp.data
+            yield resp.data
             self.offset += resp.length
             if resp.final():
                 # Do not validate length as it's final.
@@ -72,11 +74,3 @@ class FTC:
         response.eval()
 
         return response, r_address, dt
-
-
-f = FTC(("10.0.0.19", 12343), "filename")
-f.request()
-
-print("File Data:")
-print(f.data)
-print("Size: ", len(f.data))

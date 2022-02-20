@@ -4,6 +4,8 @@ from time import sleep
 
 
 class UDPServer:
+    DAEMON = True
+
     def __init__(self, ip, port, client_handler, request_length):
         self.ip = ip
         self.port = port
@@ -15,16 +17,27 @@ class UDPServer:
 
     def start(self):
         self.sock.bind((self.ip, self.port))
-        self.thread = Thread(target=self.__background_worker).start()
+        try:
+            self.thread = Thread(target=self.__background_worker, daemon=self.DAEMON).start()
+        except KeyboardInterrupt:
+            pass
 
     def stop(self):
         self.exit = True
         sleep(1)
-        self.thread.kill()
+        try:
+            if self.thread is not None:
+                self.thread.kill()
+        except KeyboardInterrupt:
+            pass
 
     def __background_worker(self):
         # UDP is connection-less, the only reason I use threading for client handler is so
         # I can handle others - receives from other clients too at the background.
-        while self.exit is False:
-            data, addr = self.sock.recvfrom(self.req_len)
-            Thread(target=self.clh, args=(data, addr), daemon=False).start()
+        try:
+            while self.exit is False:
+                data, addr = self.sock.recvfrom(self.req_len)
+                print("Sending to: ", self.clh, " the following: ", (data, addr))
+                Thread(target=self.clh, args=(data, addr), daemon=self.DAEMON).start()
+        except KeyboardInterrupt:
+            pass

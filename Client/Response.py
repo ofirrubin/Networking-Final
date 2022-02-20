@@ -8,10 +8,20 @@ def unpad(data):
 
 
 class Response:
+    NOT_PROCESSED = b"NOT_PROCESSED_YET"
+    SYNTAX_ERR = b"UNKNOWN_FORMAT"
+    FILE_NOT_FOUND = b"FILE_NOT_FOUND"
+    OVERFLOW_ERR = b"OFFSET_OVERFLOW"
+
+    RESP_UKN = b"UNKNOWN_RESPONSE"
+    NEGATIVE_LEN = b"LENGTH_IS_NEGATIVE"
+    INV_DATA_LEN = b"INVALID_DATA_LENGTH"
+    COR_FILE = b"CORRUPTED_FILE"
+
     header_length = 72
     hash_len = 32
     int_len = 4
-    known_errors = [b"UNKNOWN_FORMAT", b"FILE_NOT_FOUND", b"OFFSET_OVERFLOW"]
+    known_errors = [SYNTAX_ERR, FILE_NOT_FOUND, OVERFLOW_ERR]
 
     def __init__(self, response):
         self.response = response
@@ -20,11 +30,11 @@ class Response:
         self.data = b""
         self.actual_hash = b""
         self.length = 0
-        self.error = b"NOT_PROCESSED_YET"
+        self.error = self.NOT_PROCESSED
 
     def valid(self, request):
         return self.filename == request.filename and \
-               (self.error is None or self.error == b"OFFSET_OVERFLOW")
+               (self.error is None or self.error == self.OVERFLOW_ERR)
 
     def eval(self):
         self.response = unpad(self.response)
@@ -33,7 +43,7 @@ class Response:
             return
 
         if len(self.response) < self.header_length:
-            self.error = b"UNKNOWN_RESPONSE"
+            self.error = self.RESP_UKN
             return
         self.filename = self.response[:self.hash_len]
         self.length = int.from_bytes(
@@ -41,13 +51,13 @@ class Response:
             byteorder="big",
             signed=False)
         if self.length < 0:
-            self.error = b"LENGTH_IS_NEGATIVE"
+            self.error = self.NEGATIVE_LEN
             return
         pos = self.hash_len + self.int_len
         self.expected_hash = self.response[pos: pos + self.hash_len]
         pos += self.hash_len
         if self.length > len(self.response) - pos:
-            self.error = b"INVALID_DATA_LENGTH"
+            self.error = self.INV_DATA_LEN
             return
         if self.length == 0:
             self.data = b''
@@ -55,9 +65,16 @@ class Response:
             self.data = self.response[-self.length:]
         self.actual_hash = md5(self.data).hexdigest().encode()
         if self.expected_hash != self.actual_hash:
-            self.error = b"CORRUPTED_FILE"
+            self.error = self.COR_FILE
             return
         self.error = None
 
     def final(self, request):
         return self.length < request.length - self.header_length
+
+    @classmethod
+    def get_overflow(cls, filename):
+        r = Response(b'')
+        r.filename = filename
+        r.error = cls.OVERFLOW_ERR
+        return r

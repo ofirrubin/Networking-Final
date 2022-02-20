@@ -13,11 +13,12 @@ class ClientHandler:
                 "message": b"SEND_MSG\n",
                 "files_list": b"LIST_FILES"}
 
-    def __init__(self, server,  connection):
+    def __init__(self, server,  connection, debug=False):
         self.server = server  # Contains the database, notifies others on change.
         self.connection = connection
         self.username = None
         self.logged_in = False
+        self.debug = debug
 
     def handle(self):
         self.login()  # Login also handles online updates & registering user.
@@ -28,16 +29,12 @@ class ClientHandler:
                 if any(command.startswith(c) for c in self.commands["login"]):
                     self.login(command)
                 elif command.startswith(self.commands["online_list"]):
-                    # print(self.username, " Classified as receive online users list")
                     self.get_online_list()
                 elif command.startswith(self.commands["has_update"]):
-                    # print(self.username, " Classified as update questioning")
                     self.has_update()
                 elif command.startswith(self.commands["get_updates"]):
-                    # print(self.username, " Classified as get_updates")
                     self.get_updates()
                 elif command.startswith(self.commands["message"]):
-                    # print(self.username, " Classified as dm")
                     self.message(command[len(self.commands["message"]):])
                 elif command.startswith(self.commands["files_list"]):
                     self.list_files()
@@ -47,9 +44,9 @@ class ClientHandler:
         except (ConnectionResetError, BrokenPipeError) as e:
             self.logout()
         # Close connection
-        print("Logging out...")
         self.logout()
-        print("Closed connection to client")
+        if self.debug:
+            print(self.username, " Logged out, connection closed")
 
     def login(self, credentials=None):
         # Login, Then chose what is the required action.
@@ -118,7 +115,8 @@ class ClientHandler:
         try:
             salt_, dest, msg = metadata.split(b"\n", maxsplit=3)
             if dest == b"":
-                print("Broadcast from: ", self.username, "-> ", msg)
+                if self.debug:
+                    print("Broadcast from: ", self.username, "-> ", msg)
                 self.broadcast(msg)
             else:
                 if msg == b'':
@@ -126,7 +124,8 @@ class ClientHandler:
                 if self.username == dest:
                     raise ValueError("You can't send message to your self!")
                 if self.server.db.add_message(self.username, dest, msg) is True:
-                    print("Message from: ", self.username, " to: ", dest, " -> ", msg)
+                    if self.debug:
+                        print("Message from: ", self.username, " to: ", dest, " -> ", msg)
                     status = b"TRUE\nMSG_ADDED\n"
                 else:
                     status = b"FALSE\nUSER_NOT_FOUND\n"
@@ -146,7 +145,7 @@ class ClientHandler:
         if self.username in self.server.db.users:
             self.server.db.remove_user(self.username)
             for user in self.server.db.users:
-                self.server.db.add_message(self.SYSTEM, user, self.username + b" has logged out.")
+                self.server.db.add_message(self.SYSTEM.encode(), user, self.username + b" has logged out.")
 
         # Remove pending messages, remove online status (Delete user? depends on what ill choose with db)
         self.logged_in = False
@@ -158,5 +157,5 @@ class ClientHandler:
             pass
 
     def list_files(self):
-        files = "\n".join(self.server.list_files()).encode()
+        files = "\n".join(self.server.db.list_files()).encode()
         self.connection.send(files)

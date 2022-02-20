@@ -1,15 +1,15 @@
-from TCPServer import Server as Server
 from Lib.SecurePipe import SecurePipe
-import ClientHandler
-from Server.DatabaseConnection import DatabaseConnection as Database
+
+from Server.ChatServer.TCPServer import Server
+from Server.ChatServer.ClientHandler import ClientHandler
 
 
-class ChatServer:
-    def __init__(self, ip, port, **args):
+class CServer:
+    def __init__(self, ip, port, db):
         self.ip = ip
         self.port = port
         self.server = Server(self.ip, self.port)
-        self.db = Database(**args)
+        self.db = db
         self.db.users["admin"] = {"conn_alive": True}
 
     def client_handler(self, conn, addr):
@@ -18,14 +18,8 @@ class ChatServer:
         print("Securing connection")
         connection = SecurePipe(conn, server_side=True)
         print("Connection secured" if connection.secured else "Connection is not secured")
-        ClientHandler.ClientHandler(self, connection).handle()
+        ClientHandler(self, connection).handle()
         conn.close()
-
-    def list_files(self):
-        return ["h.txt", "hello.txt"]
-
-    def get_file(self, filename):
-        return b'THIS IS THE REQUESTED FILE' + filename
 
     def start(self):
         self.server.start(user_handler=self.client_handler)

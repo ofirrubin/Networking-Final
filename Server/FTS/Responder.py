@@ -10,7 +10,10 @@ class Responder:
     int_len = 4
     hash_len = 32
 
-    def __init__(self, server_sock, database, add, metabytes):
+    def __init__(self, server_sock, database, add, metabytes, debug):
+        self.debug = debug
+        if self.debug:
+            print(metabytes)
         self.add = add
         self.handle = False
         self.block_size = self.default_block_size
@@ -33,6 +36,8 @@ class Responder:
             return
         self.file = database.get_file(self.requested_file)
         self.handle = True
+        if self.debug:
+            print(self)
 
     def request_len(self):
         # If we passed the end of the file, or we have 'less file' then required we send left,
@@ -61,14 +66,19 @@ class Responder:
         resp += int.to_bytes(size_sent, self.int_len, "big", signed=False)
         resp += md5(file_data).hexdigest().encode()
         resp += self.padding(file_data)
+        print("Sending.... Size: ", str(size_sent), " MD5: ", md5(file_data).hexdigest())
         return resp
 
     def respond(self):
         if self.handle is False:
+            if self.debug:
+                print("UNKNOWN FORMAT")
             self.send(b"UNKNOWN_FORMAT", True)
             return
 
         if self.file is None:
+            if self.debug:
+                print("FILE NOT FOUND")
             self.send(b"FILE_NOT_FOUND", True)
         else:
             self.send(self.build_response())
@@ -89,4 +99,4 @@ class Responder:
                """.format(requested_file=self.requested_file,
                           offset=self.offset,
                           block_size=self.block_size,
-                          actual_size=self.request_len())
+                          actual_size=self.request_len() if self.file is not None else 'File Not Found')
