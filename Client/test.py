@@ -1,4 +1,4 @@
-from FTC import FTC
+from Client.FTLib.FTC import FTC
 
 
 def download_handler(ftc, status, resp):

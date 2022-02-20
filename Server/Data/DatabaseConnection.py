@@ -10,7 +10,6 @@ class DatabaseConnection:
         self.filter_ = None
         self.files = {}
         self.update_list_files()
-        print(self.files)
 
     def remove_user(self, username):
         if username in self.users.keys():

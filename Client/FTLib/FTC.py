@@ -2,8 +2,8 @@
 
 import socket
 
-from Client.Request import Request
-from Client.Response import Response
+from Client.FTLib.Request import Request
+from Client.FTLib.Response import Response
 
 
 class FTC:
@@ -29,7 +29,6 @@ class FTC:
         while self.length > 0:
             req = Request(self.filename, self.offset, self.length)
             resp, r_address, delta_time = self.timed_request(req)
-            self.length = 0
             if resp.valid(req) is True:
                 self.offset += resp.length
                 callback(self, False, resp)

@@ -83,7 +83,7 @@ class ClientHandler:
         return True if self.username in self.server.db.chats and len(self.server.db.chats[self.username]) > 0 else False
 
     def has_update(self):
-        self.connection.send(str(self.__has_update()).encode() + salt())
+        self.connection.send(str(self.__has_update()).upper().encode() + salt())
 
     def get_updates(self):
         if self.__has_update() is False:

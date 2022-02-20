@@ -38,12 +38,22 @@ class Chatter:
     def __set_online_list(self, status_feedback):
         status, users = status_feedback
         if status is True:
-            self.online_users = users
+            u = []
+            for user in users:
+                try:
+                    u.append(user.decode())
+                except UnicodeDecodeError:
+                    pass
+            self.online_users = u
 
-    def on_update(self, updates, failed):
+    @classmethod
+    def on_update(cls, updates, failed):
         for u in updates:
-            src, msg = u.split(b"\n", maxsplit=2)
-            print("<", src.decode(), "> says: ", msg.decode())
+            try:
+                src, msg = u.split(b"\n", maxsplit=2)
+                print("<", src.decode(), "> says: ", msg.decode())
+            except UnicodeDecodeError:
+                pass
 
     def message(self, callback, dest, message):
         return self.client.send_msg(callback, dest, message)
@@ -72,25 +82,37 @@ def help_():
 
 def download_callback(ftc, status, resp):
     global downloads_path
-    f_path = os.path.join(downloads_path, ftc.filename)
+    dest = os.path.join(downloads_path, ftc.filename)
     if status is True:
-        print("\nThe file", f_path, " completed downloading! ->", ftc)
+        print("\nThe file", dest, " completed downloading! ->", ftc)
     else:
-        with open(f_path, 'ab+') as f:
+        with open(dest, 'ab+') as f:
             f.write(resp.data)
 
 
-def eval_commands(client, inp):
+def on_msg(verified, feedback, msg):
+    if verified is False:
+        if Client.USER_NOT_FOUND in feedback:
+            print("User not found, failed to send the message")
+        else:
+            print("Failed to send the message")
+
+
+def eval_input(client):
+    inp = input('>')
     if inp == 'exit':
         client.logout()
-        return False
+        exit(0)
     if inp.startswith('msg '):
         inp = inp[len('msg '):]
         if ' ' not in inp:
             print("Invalid syntax, to message use: <msg> <dest> <msg_txt>")
             return True
         dest, msg = inp.split(' ', maxsplit=1)
-        client.message(None, dest, msg)
+        if dest not in client.online_users:
+            print("User not online, check online list and try again")
+        else:
+            client.message(on_msg, dest, msg)
     elif inp.startswith('broadcast '):
         client.broadcast(None, inp[len('broadcast '):])
     elif inp.startswith('list users'):
@@ -102,6 +124,9 @@ def eval_commands(client, inp):
         print("The file ", filename, ' will be download shortly in Downloads folder.\n'
                                      'Warning, the download will override existing file if exists')
         try:
+            dest = os.path.join(downloads_path, filename)
+            if os.path.isfile(dest):
+                os.remove(dest)
             client.download_file(filename, download_callback)
         except FileNotFoundError:
 
@@ -132,9 +157,8 @@ def main():
     if os.path.isdir('Downloads') is False:
         os.mkdir('Downloads')
     try:
-        while eval_commands(c, input()):
-            continue
-        exit(0)
+        while True:
+            eval_input(c)
     except KeyboardInterrupt:
         print("Logging out.. Good bye!")
         c.logout()

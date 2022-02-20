@@ -1,13 +1,26 @@
-from hashlib import md5, sha256
-from datetime import datetime, timedelta
+from hashlib import md5
 from threading import Thread
 
 from Client import ClientExceptions
-from Client.FTC import FTC
+from Client.FTLib.FTC import FTC
 from Lib.SecurePipe import SecurePipe, salt
 
 
 class Client:
+    # Response consts
+    USER_NAME_IN_USE = b'USERNAME_IN_USE'
+    USER_REGISTERED = b'USER_REGISTERED'
+    USER_NOT_FOUND = b'USER_NOT_FOUND'
+    TRUE = b"TRUE"
+    FALSE = b'FALSE'
+    # Commands
+    LOGIN = b'LOGIN'
+    GET_USERS = "GET_USERS"
+    GET_UPDATES = "GET_UPDATES"
+    SEND_MSG = "SEND_MSG"
+    LIST_FILES = 'LIST_FILES'
+    UPDATE_QUEST = "USER_QUESTS"
+
     DAEMON = False
 
     def __init__(self, ip, port):
@@ -37,11 +50,11 @@ class Client:
             raise ValueError("Username nor password can include new line.")
         self.connection = SecurePipe.connect(self.ip, self.port)
         print("Established secure connection..")
-        self.connection.send(b"\n".join([b"LOGIN", username, salt()]))
+        self.connection.send(b"\n".join([self.LOGIN, username, salt()]))
         status = self.connection.recv()
-        if status == b'USERNAME_IN_USE':
+        if status == self.USER_NAME_IN_USE:
             raise ClientExceptions.UsernameInUse()
-        elif status == b'USER_REGISTERED':
+        elif status == self.USER_REGISTERED:
             self.logged_in = True
             self.username = username
             print("Logged in!")
@@ -70,20 +83,20 @@ class Client:
 
     def __call_req(self, request_type, callback, request_args, r):
         ans = self.connection.recv()
-        if request_type == "GET_USERS":
+        if request_type == self.GET_USERS:
             Thread(target=self.__get_online_list, args=(ans, callback, r), daemon=self.DAEMON).start()
-        elif request_type == "GET_UPDATES":
+        elif request_type == self.GET_UPDATES:
             self.__get_updates(ans, callback)
-        elif request_type == "SEND_MSG":
+        elif request_type == self.SEND_MSG:
             Thread(target=self.__sent_msg, args=(ans, request_args, callback), daemon=self.DAEMON).start()
-        elif request_type == 'LIST_FILES':
+        elif request_type == self.LIST_FILES:
             Thread(target=self.__list_files, args=(ans, callback), daemon=self.DAEMON).start()
 
     def __call_updates(self):
-        self.connection.send("USER_QUESTS".encode() + salt())
+        self.connection.send(self.UPDATE_QUEST.encode() + salt())
         ans = self.connection.recv()
-        if ans.startswith(b"True"):
-            self.requests.insert(0, ("GET_UPDATES", self.get_updates, None))
+        if ans.startswith(self.TRUE):
+            self.requests.insert(0, (self.GET_UPDATES, self.get_updates, None))
 
     def __get_online_list(self, ans, callback, req):
         if self.stop_be is True or not callable(callback):
@@ -107,31 +120,29 @@ class Client:
     def __sent_msg(self, feedback, msg, callback):
         if self.stop_be is True or not callable(callback):
             return
-        if feedback.startswith(b"TRUE"):
-            callback(feedback, msg)
+        if feedback.startswith(self.TRUE):
+            callback(True, feedback, msg)
         else:
-            m = feedback.split(b"\n")
-            if m[0] == b"FALSE":
-                print("Message not sent, error: ", m[1])
-            else:
-                print("Message not sent, recvd this feedback: ", feedback)
-            callback(feedback, msg)
+            m = feedback.split(b"\n", maxsplit=1)
+            if len(m) > 1 and self.USER_NOT_FOUND in m[1]:
+                m = [m[0], self.USER_NOT_FOUND]
+            callback(False, m, msg)
 
     def get_online_list(self, callback):
         if self.stop_be is True or callable(callback) is False:
             return
-        if ("GET_USERS", callback, None) not in self.requests:
-            self.requests.append(("GET_USERS", callback, None))
+        if (self.GET_USERS, callback, None) not in self.requests:
+            self.requests.append((self.GET_USERS, callback, None))
 
     def send_msg(self, callback, dest, msg):
         if dest.encode() == self.username:
             raise ValueError("Oops! you can't send message to your self.")
         if msg == '':
             raise ValueError("Oops! you can't send an empty message!")
-        self.requests.insert(0, ("SEND_MSG", callback, dest + "\n" + msg))
+        self.requests.insert(0, (self.SEND_MSG, callback, dest + "\n" + msg))
 
     def broadcast(self, callback, msg):
-        self.requests.insert(0, ("SEND_MSG", callback, "\n" + msg))
+        self.requests.insert(0, (self.SEND_MSG, callback, "\n" + msg))
 
     def __get_updates(self, updates_count_bytes, callback, threshold=5):
         failed = 0
@@ -155,8 +166,8 @@ class Client:
             return callback(list_files.decode().split("\n"))
 
     def list_files(self, callback):
-        if ("LIST_FILES", callback, None) not in self.requests:
-            self.requests.append(("LIST_FILES", callback, None))
+        if (self.LIST_FILES, callback, None) not in self.requests:
+            self.requests.append((self.LIST_FILES, callback, None))
 
     def download_file(self, filename, callback, offset=0):
         if not callable(callback):

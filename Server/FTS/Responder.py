@@ -42,7 +42,7 @@ class Responder:
     def request_len(self):
         # If we passed the end of the file, or we have 'less file' then required we send left,
         # otherwise we send in the maximum possible size.
-        size_sent = min(self.block_size, self.maximum_block_size - self.resp_header_len) - self.resp_header_len
+        size_sent = min(self.block_size, self.maximum_block_size) - self.resp_header_len
         left = len(self.file) - self.offset
         return left if left < 0 or left < size_sent else size_sent
 
@@ -66,7 +66,6 @@ class Responder:
         resp += int.to_bytes(size_sent, self.int_len, "big", signed=False)
         resp += md5(file_data).hexdigest().encode()
         resp += self.padding(file_data)
-        print("Sending.... Size: ", str(size_sent), " MD5: ", md5(file_data).hexdigest())
         return resp
 
     def respond(self):
