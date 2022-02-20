@@ -5,13 +5,25 @@ from Lib.SecurePipe import salt
 
 
 class ClientHandler:
-    SYSTEM = "admin"
-    commands = {"login": [b"LOGIN", b"TICK"],
+    # Allowed commands and their byte format
+    commands = {"login": [b"LOGIN", b"REGISTER"],
                 "online_list": b"GET_USERS",
                 "has_update": b"USER_QUESTS",
                 "get_updates": b"GET_UPDATES",
                 "message": b"SEND_MSG\n",
                 "files_list": b"LIST_FILES"}
+
+    # consts
+    TIMEOUT = 60  # Seconds
+    USERNAME_IN_USE = b'USERNAME_IN_USE'
+    USERNAME_REGISTERED = b'USER_REGISTERED'
+    USERNAME_NOT_FOUND = b'USER_NOT_FOUND'
+    MSG_ADDED = b'MSG_ADDED'
+    INVALID_FORMAT = b'INVALID_FORMAT'
+    TRUE = b'TRUE'
+    FALSE = b'FALSE'
+    DIVIDER = b'\n'
+    DIVIDER_DEC = DIVIDER.decode()
 
     def __init__(self, server,  connection, debug=False):
         self.server = server  # Contains the database, notifies others on change.
@@ -21,11 +33,11 @@ class ClientHandler:
         self.debug = debug
 
     def handle(self):
-        self.login()  # Login also handles online updates & registering user.
+        self.login()  # Login also handles registering user,
         try:
             while self.logged_in is True:
                 # Get next wanted command if any (client adds command as queue and backend sends them)
-                command = self.connection.recv(ftimeout=60)
+                command = self.connection.recv(ftimeout=self.TIMEOUT)
                 if any(command.startswith(c) for c in self.commands["login"]):
                     self.login(command)
                 elif command.startswith(self.commands["online_list"]):
@@ -62,22 +74,20 @@ class ClientHandler:
             req, username, salt_ = credentials.split(b"\n", maxsplit=3)
         except ValueError:
             return
-        if req != b"LOGIN":
+        if req not in self.commands["login"]:
             return
         if username in self.server.db.users:
             # Already taken
-            self.connection.send(b"USERNAME_IN_USE")
+            self.connection.send(self.USERNAME_IN_USE)
             return
         # Register user
         self.username = username
         self.logged_in = True
         self.server.db.users[username] = {"conn_alive": self.logged_in}
-        self.connection.send(b"USER_REGISTERED")
+        self.connection.send(self.USERNAME_REGISTERED)
 
     def list_online_users(self):
-        users = list(self.server.db.users)
-        users.remove(self.SYSTEM)
-        return users
+        return list(self.server.db.users)
 
     def __has_update(self):
         return True if self.username in self.server.db.chats and len(self.server.db.chats[self.username]) > 0 else False
@@ -96,7 +106,7 @@ class ClientHandler:
             return
         for update in updates:
             sender, msg = update
-            m = sender + b"\n" + msg
+            m = sender + self.DIVIDER + msg
             self.connection.send(m)
             h = md5(m).hexdigest().encode()
             rh = self.connection.recv()
@@ -126,36 +136,32 @@ class ClientHandler:
                 if self.server.db.add_message(self.username, dest, msg) is True:
                     if self.debug:
                         print("Message from: ", self.username, " to: ", dest, " -> ", msg)
-                    status = b"TRUE\nMSG_ADDED\n"
+                    status = [self.TRUE, self.MSG_ADDED]
                 else:
-                    status = b"FALSE\nUSER_NOT_FOUND\n"
-                self.connection.send(status + salt())
+                    status = [self.FALSE + self.USERNAME_NOT_FOUND]
+                status.append(salt())
+                self.connection.send(self.DIVIDER.join(status))
         except ValueError:
-            self.connection.send(b"FALSE\nINVALID_FORMAT\n" + salt())
+            self.connection.send(self.DIVIDER.join([self.FALSE, self.INVALID_FORMAT, salt()]))
 
     def broadcast(self, msg):
         # Client wants to broadcast all users online in the server.
         for user in self.server.db.users:
             if self.username != user:
                 self.server.db.add_message(self.username, user, msg)
-        self.connection.send(b"TRUE\n")
+        self.connection.send(self.TRUE + self.DIVIDER)
 
     def logout(self):
         # Close is essentially removing the user
         if self.username in self.server.db.users:
             self.server.db.remove_user(self.username)
-            for user in self.server.db.users:
-                self.server.db.add_message(self.SYSTEM.encode(), user, self.username + b" has logged out.")
-
         # Remove pending messages, remove online status (Delete user? depends on what ill choose with db)
         self.logged_in = False
-        # Broadcast the logout by the system admin.
-
         try:
             self.connection.close()
         except socket.error:
             pass
 
     def list_files(self):
-        files = "\n".join(self.server.db.list_files()).encode()
+        files = self.DIVIDER_DEC.join(self.server.db.list_files()).encode()
         self.connection.send(files)

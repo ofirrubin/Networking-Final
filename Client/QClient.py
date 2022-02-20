@@ -1,3 +1,4 @@
+import datetime
 from hashlib import md5
 from threading import Thread
 
@@ -5,14 +6,17 @@ from Client import ClientExceptions
 from Client.FTLib.FTC import FTC
 from Lib.SecurePipe import SecurePipe, salt
 
+# Response consts
+USER_NAME_IN_USE = b'USERNAME_IN_USE'
+USER_REGISTERED = b'USER_REGISTERED'
+USER_NOT_FOUND = b'USER_NOT_FOUND'
+TRUE = b"TRUE"
+FALSE = b'FALSE'
 
-class Client:
-    # Response consts
-    USER_NAME_IN_USE = b'USERNAME_IN_USE'
-    USER_REGISTERED = b'USER_REGISTERED'
-    USER_NOT_FOUND = b'USER_NOT_FOUND'
-    TRUE = b"TRUE"
-    FALSE = b'FALSE'
+
+class QClient:
+    # Low Level Client where the commands performed one by one with queue.
+
     # Commands
     LOGIN = b'LOGIN'
     GET_USERS = "GET_USERS"
@@ -52,9 +56,9 @@ class Client:
         print("Established secure connection..")
         self.connection.send(b"\n".join([self.LOGIN, username, salt()]))
         status = self.connection.recv()
-        if status == self.USER_NAME_IN_USE:
+        if status == USER_NAME_IN_USE:
             raise ClientExceptions.UsernameInUse()
-        elif status == self.USER_REGISTERED:
+        elif status == USER_REGISTERED:
             self.logged_in = True
             self.username = username
             print("Logged in!")
@@ -95,7 +99,7 @@ class Client:
     def __call_updates(self):
         self.connection.send(self.UPDATE_QUEST.encode() + salt())
         ans = self.connection.recv()
-        if ans.startswith(self.TRUE):
+        if ans.startswith(TRUE):
             self.requests.insert(0, (self.GET_UPDATES, self.get_updates, None))
 
     def __get_online_list(self, ans, callback, req):
@@ -120,12 +124,12 @@ class Client:
     def __sent_msg(self, feedback, msg, callback):
         if self.stop_be is True or not callable(callback):
             return
-        if feedback.startswith(self.TRUE):
+        if feedback.startswith(TRUE):
             callback(True, feedback, msg)
         else:
             m = feedback.split(b"\n", maxsplit=1)
-            if len(m) > 1 and self.USER_NOT_FOUND in m[1]:
-                m = [m[0], self.USER_NOT_FOUND]
+            if len(m) > 1 and USER_NOT_FOUND in m[1]:
+                m = [m[0], USER_NOT_FOUND]
             callback(False, m, msg)
 
     def get_online_list(self, callback):
@@ -175,4 +179,5 @@ class Client:
         if type(offset) is not int or offset < 0:
             raise ValueError("offset must be int >= 0")
         req = FTC((self.ip, self.port + 1), filename, offset)
+        print(datetime.datetime.now())
         req.request(callback)

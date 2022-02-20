@@ -25,7 +25,6 @@ class Server:
         while self.__running is True:
             try:
                 data, caddr = self.sock.accept()
-                print("Client accepted")
                 Thread(target=user_handler, args=(data, caddr), daemon=self.DAEMON).start()
             except (KeyboardInterrupt, OSError):
                 self.stop()

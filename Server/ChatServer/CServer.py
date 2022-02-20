@@ -5,12 +5,13 @@ from Server.ChatServer.ClientHandler import ClientHandler
 
 
 class CServer:
+    # TCP Server over SecurePipe, Handle client with ClientHandler (Chat Server)
+    # Adapter server
     def __init__(self, ip, port, db):
         self.ip = ip
         self.port = port
         self.server = Server(self.ip, self.port)
         self.db = db
-        self.db.users["admin"] = {"conn_alive": True}
 
     def client_handler(self, conn, addr):
         # User handler

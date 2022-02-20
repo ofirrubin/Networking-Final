@@ -25,7 +25,7 @@ class Chat:
 
 
 try:
-    chat = Chat(ip="127.0.0.1", port=12333, files_root=os.path.join(os.path.curdir, 'Data', 'Files'), debug=False)
+    chat = Chat(ip="127.0.0.1", port=12000, files_root=os.path.join(os.path.curdir, 'Data', 'Files'), debug=True)
     chat.start()
     while input() != 'exit':
         continue

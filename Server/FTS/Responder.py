@@ -34,38 +34,24 @@ class Responder:
         if self.block_size <= self.resp_header_len:
             self.send(b"")
             return
-        self.file = database.get_file(self.requested_file)
+        self.database = database
+        self.file = None
         self.handle = True
         if self.debug:
             print(self)
 
-    def request_len(self):
-        # If we passed the end of the file, or we have 'less file' then required we send left,
-        # otherwise we send in the maximum possible size.
-        size_sent = min(self.block_size, self.maximum_block_size) - self.resp_header_len
-        left = len(self.file) - self.offset
-        return left if left < 0 or left < size_sent else size_sent
-
     def build_response(self):
         resp = self.requested_file
-        # size_sent = self.block_size
-        # if self.block_size + self.resp_header_len > self.maximum_block_size:
-        #     size_sent = self.maximum_block_size
-        # left = len(self.file) - self.offset
-        # if left < 0:
-        #     return self.padding(b"OFFSET_OVERFLOW", self.resp_header_len)
-        #
-        # size_sent -= self.resp_header_len
-        # if left < size_sent:
-        #     size_sent = left
-        size_sent = self.request_len()
-        if size_sent < 0:
+        try:
+            size_sent = min(self.block_size, self.maximum_block_size) - self.resp_header_len
+            self.file = self.database.get_file(self.requested_file, size_sent, self.offset)
+        except OverflowError:
             return self.padding(b"OFFSET_OVERFLOW", self.resp_header_len)
-        file_data = self.file[self.offset: self.offset + size_sent]
+        size_sent = len(self.file) if len(self.file) < size_sent else size_sent
         # : PAYLOAD_SENT_SIZE | PAYLOAD_MD5 | PAYLOAD padded
         resp += int.to_bytes(size_sent, self.int_len, "big", signed=False)
-        resp += md5(file_data).hexdigest().encode()
-        resp += self.padding(file_data)
+        resp += md5(self.file).hexdigest().encode()
+        resp += self.padding(self.file)
         return resp
 
     def respond(self):
@@ -74,10 +60,9 @@ class Responder:
                 print("UNKNOWN FORMAT")
             self.send(b"UNKNOWN_FORMAT", True)
             return
-
-        if self.file is None:
+        if self.requested_file not in self.database.files:
             if self.debug:
-                print("FILE NOT FOUND")
+                print(self.file, " <-> FILE NOT FOUND")
             self.send(b"FILE_NOT_FOUND", True)
         else:
             self.send(self.build_response())
@@ -98,4 +83,4 @@ class Responder:
                """.format(requested_file=self.requested_file,
                           offset=self.offset,
                           block_size=self.block_size,
-                          actual_size=self.request_len() if self.file is not None else 'File Not Found')
+                          actual_size=len(self.file) if self.file is not None else 'File Not Found')

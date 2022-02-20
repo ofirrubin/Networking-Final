@@ -1,7 +1,7 @@
 # File Transfer Client - Reliable UDP client for file transferring
 
 import socket
-
+from time import time_ns
 from Client.FTLib.Request import Request
 from Client.FTLib.Response import Response
 
@@ -10,7 +10,8 @@ class FTC:
     FILE_NOT_FOUND = b"FILE_NOT_FOUND"
     SYNTAX_ERROR = b"UNKNOWN_FORMAT"
     MAX_LENGTH = 4096
-    BASE_LENGTH = 1024
+    BASE_LENGTH = 2048
+    MIN_LENGTH = 128
 
     # although udp supports up to 65535 (such as on Windows),
     # I found that my PC (macOS) supports up to 9216 bytes, I settled on 4096.
@@ -21,6 +22,7 @@ class FTC:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.offset = 0
         self.length = self.BASE_LENGTH
+        self.last_bpns = 0.9  # Last bytes per nano sec, defaulted to 0.9 because anything * (1 > n > 0) will be bigger
 
     def __str__(self):
         return str(self.offset) + " bytes of the file '" + self.filename + "' downloaded from " + str(self.address)
@@ -29,47 +31,37 @@ class FTC:
         while self.length > 0:
             req = Request(self.filename, self.offset, self.length)
             resp, r_address, delta_time = self.timed_request(req)
-            if resp.valid(req) is True:
+            if resp.error == self.FILE_NOT_FOUND:
+                raise FileNotFoundError("File not found")
+            elif resp.error == self.SYNTAX_ERROR:
+                raise SyntaxError("Request syntax error")
+            valid = resp.valid(req)
+
+            if valid is True:
                 self.offset += resp.length
                 callback(self, False, resp)
-                if resp.final(req) is True:
-                    self.length = 0  # There is no need for further requests
-                else:
-                    self.length = min(2 * self.length, self.MAX_LENGTH)
-            else:
-                if resp.error == self.FILE_NOT_FOUND:
-                    raise FileNotFoundError("File not found")
-                elif resp.error == self.SYNTAX_ERROR:
-                    raise SyntaxError("Request syntax error")
-                self.length = max(resp.header_length + 1, int(self.length / 2) + 1)
+            self.length = self.length_calc(resp, req, valid, delta_time)
         callback(self, True, None)
 
-    def request_updater(self, resp, dt):
-        if resp.valid():
-            yield resp.data
-            self.offset += resp.length
-            if resp.final():
-                # Do not validate length as it's final.
-                self.length = 0
-                return True
-            else:
-                self.length = self.length_calc(True, dt)
+    def length_calc(self, resp, req, valid, delta):
+        margin_above = 1.05
+        margin_below = 0.98
+        bpns = self.length / delta
+        ratio = bpns / (margin_below * self.last_bpns)  # Making margin_below margin so it's increased
+        self.last_bpns = bpns
+        if valid and resp.final(req):
+            return 0
+        if valid and ratio >= margin_above:  # another margin_above improvement we just going to double the bandwidth
+            length = self.length * 2
         else:
-            self.length = self.length_calc(False, dt)
-        # Make sure length is valid.
-        self.length = min(max(self.length, resp.header_length + 1), self.MAX_LENGTH)
-
-    def length_calc(self, valid, dt):
-        if valid:
-            return self.length * 2
-        else:
-            return int(self.length / 2) + 1
+            length = ratio * self.length if ratio != 0 else self.MIN_LENGTH
+        return max(self.MIN_LENGTH, min(self.MAX_LENGTH, int(length)))
 
     def timed_request(self, request):
-        dt = 0
+        st = time_ns()
         request.send_request(self.s, self.address)
         response, r_address = self.s.recvfrom(request.length)
+        et = time_ns()
         response = Response(response)
         response.eval()
-
-        return response, r_address, dt
+        return response, r_address, et - st
