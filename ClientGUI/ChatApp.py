@@ -1,39 +1,19 @@
-import os
 import eel
+from tendo import singleton
 
 from Client import ClientExceptions
-from Client import Chatter
-from Client.QClient import USER_NOT_FOUND
+from Client.Chatter import Chatter
 
 client = None
-known_users = []
+args = []
 last_updated_files = []
-
-
-class ChatApp(Chatter.Chatter):
-    def __init__(self, ip, port, file_chooser_func, on_update_, on_users_changed_,
-                 on_msg_, on_broadcast_, list_files_changed, debug=False):
-        self.debug = debug
-        self.file_chooser = file_chooser_func
-        super().__init__(ip, port,
-                         on_update=on_update_,
-                         on_users_changed=on_users_changed_,
-                         on_msg=on_msg_,
-                         on_broadcast=on_broadcast_,
-                         on_download=self.download_callback)
-        self.list_files_changed = list_files_changed
-
-    @classmethod
-    def download_callback(cls, filename, valid, offset, length, resp):
-        pass
 
 
 @eel.expose
 def login(ip, port, username):
     global client
-    if client is not None:
-        if client.logged_in:
-            eel.setChatView()
+    if client is not None and client.logged_in:
+        eel.setChatView()
         return
     try:
         if any([int(x) > 255 for x in ip.split(".")]):
@@ -49,9 +29,9 @@ def login(ip, port, username):
         eel.setInvalidPort()
         return
 
-    client = ChatApp(ip, port, choose_save_dist, on_update,
-                     lists_update, on_msg, on_msg, list_files_changed=set_downloads, debug= True)
     try:
+        global args
+        client = Chatter(ip, port, *args)
         client.login(username)
     except ValueError:  # either IP or port is incorrect
         eel.setInvalidIP()
@@ -66,59 +46,15 @@ def login(ip, port, username):
 @eel.expose
 def logout():
     global client
-    global last_updated_files
     if client is not None:
         client.logout()
-        client.shutdown()
-    client = None
+        # It might take a moment for the client to shutdown at the background. Setting it to None allows us to continue
+        client = None
     eel.setLoginView()
     eel.sleep(1)
 
 
-def choose_save_dist():
-    pass
-
-
-def on_update(updates, failed):
-    pass
-
-
-def on_msg(verified, feedback, msg):
-    pass
-
-
-def lists_update(logged_in, logged_out):
-    global known_users
-    for user in logged_in:
-        if user not in known_users:
-            eel.addUserName(user)
-            known_users.append(user)
-    for user in logged_out:
-        eel.removeUserName(user)
-        if user in known_users:
-            known_users.remove(user)
-
-
-def set_downloads():
-    global last_updated_files
-    if client is None or client.logged_in is False:
-        eel.setLoginView()
-    else:
-        print("Current: ", last_updated_files)
-        print("Up to date: ", client.list_files)
-        if client.list_files == last_updated_files:
-            return
-        new_files = [f for f in client.list_files if f not in last_updated_files]
-        to_remove = [f for f in last_updated_files if f not in client.list_files]
-        print("New files ", new_files)
-        print("Old files ", to_remove)
-        for f in new_files:
-            eel.addFile(f)
-        for f in to_remove:
-            eel.removeFile(f)
-        last_updated_files = client.list_files
-
-
+@eel.expose
 def request_download():
     pass
 
@@ -139,14 +75,95 @@ def send_msg(send_to, msg):
     return True
 
 
-def send_broadcast():
+@eel.expose
+def check_connection():
+    global client
+    if client is not None:
+        if client.logged_in:
+            eel.setChatView()
+            update_users()
+            global last_updated_files
+            last_updated_files = []
+            update_downloads()
+            eel.alertUser("You're already logged in as " + client.username().decode())
+        else:
+            client = None
+
+
+def on_update(updates, failed):
+    for update in updates:
+        try:
+            src, msg = update.decode().split("\n", maxsplit=2)
+            if src.startswith("-"):
+                eel.onBroadcastRcv(src.replace('-', '', 1), msg)
+            else:
+                eel.onMsgRcv(src.replace('+', '', 1), msg)
+        except UnicodeDecodeError:  # failed to decode message
+            pass
+
+
+def on_msg(verified, feedback, msg):
+    if verified:
+        username, msg = msg.split("\n", maxsplit=1)
+        eel.onMsgSent(username, msg)
+
+
+def on_broadcast(verified, feedback, msg):
+    if verified:
+        eel.onBroadcastSent(msg.replace("\n", "", 1))
+
+
+def on_users_changed(logged_in, logged_out):
+    for user in logged_in:
+        if eel.containsInDrop("usersList", user)() is False:
+            eel.addToDrop("usersList", user)
+            eel.systemMessage('Say hi to ' + user)  # Show message to user
+    for user in logged_out:
+        eel.removeFromDrop("usersList", user)  # Show message to user
+        eel.systemMessage('Good bye ' + user)  # Show message to user
+
+
+def update_downloads():
+    global last_updated_files
+    if client is None or client.logged_in is False:
+        eel.setLoginView()
+    else:
+        if client.list_files == last_updated_files:
+            return
+        for f in client.list_files:
+            if eel.containsInDrop("FilesList", f):
+                eel.addToDrop("FilesList", f)
+        # Remove files no longer available
+        to_remove = [f for f in last_updated_files if f not in client.list_files]
+        for f in to_remove:
+            eel.removeFromDrop("FilesList", f)
+        last_updated_files = client.list_files
+
+
+def update_users():
+    global client
+    if client is None or client.logged_in is False:
+        return
+    for user in client.online_users:
+        eel.addToDrop("usersList", user)
+
+
+def download_callback(cls, filename, valid, offset, length, resp):
     pass
 
 
 def main():
+    # This program can run as single instance only. Check it using singleton module.
+    try:
+        me = singleton.SingleInstance()
+    except singleton.SingleInstanceException:
+        print("Another instance of this program is running. Please close it first")
+        exit(0)
+
+    global args
+    args = [on_update, on_users_changed, on_msg, on_broadcast, update_downloads, ]
     eel.init("Web")
-    eel.start("simple.html", block=False)
-    client = None
+    eel.start("main.html", block=False)
     while True:
         eel.sleep(0.01)
 

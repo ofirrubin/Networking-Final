@@ -1,3 +1,4 @@
 pycryptodomex~=3.13.0
 rsa~=4.8
 Eel~=0.14.0
+tendo~=0.2.15

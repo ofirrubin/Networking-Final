@@ -36,4 +36,3 @@ class TestFTC(TestCase):
                 unlink(self.tmp.name)
                 self.server.stop()
         f.request(download_callback)
-

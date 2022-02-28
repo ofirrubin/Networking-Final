@@ -1,0 +1,49 @@
+<html lang="">
+<script src="eel.js"></script>
+<head>
+<link rel="stylesheet" type="text/css" href="Styles.css">
+<title>Chat Client</title>
+</head>
+<body onload="setLoginView()" class="login-container">
+
+    <script type="text/javascript" src="loginPage.js"></script>
+    <div id="login_window" class="login-container">
+        <div class="frame glowing">
+            <br><br>
+            <label id="loginTitle" style="color: white">Please log in</label><br><br>
+            <label for="ip"></label><input type="text" id="ip" name="ip" placeholder="IP"><br><br>
+            <label for="port"></label><input type="text" id="port" name="port" placeholder="Port"><br><br>
+
+            <label for="username"></label><input type="text" id="username" name="username" placeholder="Username"><br><br>
+            <button class="button button1" id="loginbtn" onclick="login_clicked()">Log In</button>
+            <br><br><br>
+        </div>
+
+    </div>
+
+    <script type="text/javascript" src="chatPage.js"></script>
+    <div id="chatApp">
+        <div id="BottomBar">
+            <!-- Available files to chat -->
+            <label for="usersList"></label>
+            <select class="rounded-select" name="users" id="usersList">
+            <option value="" selected>Broadcast</option>
+            </select>
+            <!-- Message Text Box and button -->
+            <label for="msg"></label><input type="text" placeholder="Write your message here.." id="msg" name="msg">
+            <button class="button" onclick="sendMsg()">Send</button><br><br><br>
+            <!-- Logout Button -->
+            <button class="button" onclick="logOut()">Log out</button>
+            <!-- List Files Available For Download -->
+            <label for="FilesList"></label><select class="rounded-select" name="FilesList" id="FilesList">
+            <option value="" selected disabled>Downloadable</option>
+            </select>
+            <!-- Download Button -->
+            <button class="button" onclick="onDownloadClicked()">Download</button>
+        </div>
+        <br><label style="color: white">Messages</label><br><br>
+        <div id="ChatsDialog" class="chatsFlow">
+        </div>
+    </div>
+</body>
+</html>

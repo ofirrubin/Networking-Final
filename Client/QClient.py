@@ -42,13 +42,11 @@ class QClient:
     def login(self, username):
         if self.stop_be is True:
             return
-
         if self.be.is_alive():
             self.stop_be = True
             self.be.join(timeout=0.2)
             self.stop_be = False
             self.be = Thread(target=self.__backend, daemon=self.DAEMON)
-
         if b"\n" in username:
             raise ValueError("Username nor password can include new line.")
         self.connection = SecurePipe.connect(self.ip, self.port)

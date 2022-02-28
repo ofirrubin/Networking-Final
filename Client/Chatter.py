@@ -9,7 +9,7 @@ class Chatter:
     # Automatically retrieve updates => messages, online list, files list
     INTERVALS = 1.5  # SLEEP INTERVALS
 
-    def __init__(self, ip, port, on_update, on_users_changed, on_msg, on_broadcast, on_download):
+    def __init__(self, ip, port, on_update, on_users_changed, on_msg, on_broadcast, on_download, on_ls_files_changed=None):
         self.ip = ip
         self.port = port
         self.client = QClient(self.ip, self.port)
@@ -21,7 +21,7 @@ class Chatter:
         self.on_message = on_msg
         self.on_broadcast = on_broadcast
         self.on_download = on_download
-        self.list_files_changed = None
+        self.on_list_files_changed = on_ls_files_changed
 
     def login(self, username):
         self.online_users = []
@@ -41,7 +41,7 @@ class Chatter:
 
     def _set_list_files(self, files_):
         self.list_files = files_
-        if callable(self.list_files_changed):
+        if callable(self.on_list_files_changed):
             self.list_files_changed()
 
     def __set_online_list(self, status_feedback):
@@ -70,7 +70,7 @@ class Chatter:
         self.client.download_file(filename, self.on_download)
 
     def broadcast(self, msg):
-        return self.client.broadcast(self.on_message, msg)
+        return self.client.broadcast(self.on_broadcast, msg)
 
     def logout(self):
         return self.client.logout()
@@ -81,3 +81,6 @@ class Chatter:
 
     def shutdown(self):
         return self.client.shutdown()
+
+    def username(self):
+        return self.client.username

@@ -24,11 +24,12 @@ class Chat:
         self.files_server.stop()
 
 
-try:
-    chat = Chat(ip="127.0.0.1", port=12000, files_root=os.path.join(os.path.curdir, 'Data', 'Files'), debug=True)
-    chat.start()
-    while input() != 'exit':
-        continue
-    chat.stop()
-except KeyboardInterrupt:
-    pass
+if __name__ == "__main__":
+    try:
+        chat = Chat(ip="127.0.0.1", port=12000, files_root=os.path.join(os.path.curdir, 'Data', 'Files'), debug=True)
+        chat.start()
+        while input() != 'exit':
+            continue
+        chat.stop()
+    except KeyboardInterrupt:
+        pass
