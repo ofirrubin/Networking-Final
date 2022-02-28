@@ -51,14 +51,16 @@ class DatabaseConnection:
     def __filtered_walk(self, filter_: list):
         # update files hash map with the given filter -> files must end with any of the filters.
         files = []
+        if os.path.isdir(self.root) is False:
+            return files
         for root_, dir_, files_ in os.walk(self.root):
             files += filter(lambda x: any(x.endswith(f) for f in filter_) and not x.startwith('.'), files_)
         return files
 
     def __walk(self):
         # Get all files from file system
-        return [f for f in os.listdir(self.root)
-                if os.path.isfile(os.path.join(self.root, f)) and f.startswith('.') is False]
+        return [] if os.path.isdir(self.root) is False else [f for f in os.listdir(self.root)
+                                                             if os.path.isfile(os.path.join(self.root, f)) is True and f.startswith('.') is False]
 
     def list_files(self):
         # Returns the files available for the client
