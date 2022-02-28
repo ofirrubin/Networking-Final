@@ -9,7 +9,7 @@ def download_handler(ftc, status, resp):
         print(end - start)
         print("\nThis file completed downloading! ->", ftc)
     else:
-        print("Recieved data from file >", ftc, "\nactual data: ", str(resp.data))
+        print("Received data from file >", ftc, "\nactual data: ", str(resp.data))
 
 
 req = FTC(('127.0.0.1', 12001), '1MB.txt')

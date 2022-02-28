@@ -1,7 +1,8 @@
 from hashlib import md5
+from time import time_ns
 
 
-def unpad(data):
+def un_pad(data):
     while data and data[0] == 0:
         data = data[1:]
     return data
@@ -23,8 +24,12 @@ class Response:
     int_len = 4
     known_errors = [SYNTAX_ERR, FILE_NOT_FOUND, OVERFLOW_ERR]
 
-    def __init__(self, response):
+    def __init__(self, response, address):
+        self.resp_ts = time_ns()
+        self.eval_ts = None  # Time Stamp after finished eval.
         self.response = response
+        self.address = address
+
         self.filename = b""
         self.expected_hash = b""
         self.data = b""
@@ -36,8 +41,8 @@ class Response:
         return self.filename == request.filename and \
                (self.error is None or self.error == self.OVERFLOW_ERR)
 
-    def eval(self):
-        self.response = unpad(self.response)
+    def __eval(self):
+        self.response = un_pad(self.response)
         if self.response in self.known_errors:
             self.error = self.response
             return
@@ -68,6 +73,10 @@ class Response:
             self.error = self.COR_FILE
             return
         self.error = None
+
+    def eval(self):
+        self.__eval()
+        self.eval_ts = time_ns()
 
     def final(self, request):
         return self.length < request.length - self.header_length

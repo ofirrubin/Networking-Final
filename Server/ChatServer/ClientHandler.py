@@ -53,7 +53,7 @@ class ClientHandler:
                 else:
                     self.logged_in = False
                 sleep(0.2)
-        except (ConnectionResetError, BrokenPipeError) as e:
+        except (ConnectionResetError, BrokenPipeError):
             self.logout()
         # Close connection
         self.logout()
@@ -133,7 +133,7 @@ class ClientHandler:
                     raise ValueError("Can't send empty message")
                 if self.username == dest:
                     raise ValueError("You can't send message to your self!")
-                if self.server.db.add_message(self.username, dest, msg) is True:
+                if self.server.db.add_message(self.username, dest, msg, broadcast=False) is True:
                     if self.debug:
                         print("Message from: ", self.username, " to: ", dest, " -> ", msg)
                     status = [self.TRUE, self.MSG_ADDED]
@@ -148,7 +148,7 @@ class ClientHandler:
         # Client wants to broadcast all users online in the server.
         for user in self.server.db.users:
             if self.username != user:
-                self.server.db.add_message(self.username, user, msg)
+                self.server.db.add_message(self.username, user, msg, broadcast=True)
         self.connection.send(self.TRUE + self.DIVIDER)
 
     def logout(self):

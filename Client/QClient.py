@@ -1,4 +1,3 @@
-import datetime
 from hashlib import md5
 from threading import Thread
 
@@ -35,7 +34,7 @@ class QClient:
         self.username = b''
 
         self.requests = []
-        self.get_updates = print
+        self.on_update = print
         self.logged_in = False
         self.be = Thread(target=self.__backend, daemon=self.DAEMON)
         self.stop_be = False
@@ -67,6 +66,9 @@ class QClient:
     def logout(self):
         self.stop_be = True
         self.logged_in = False
+
+    def shutdown(self):
+        self.connection.shutdown()
 
     def __backend(self):
         self.stop_be = False
@@ -100,7 +102,7 @@ class QClient:
         self.connection.send(self.UPDATE_QUEST.encode() + salt())
         ans = self.connection.recv()
         if ans.startswith(TRUE):
-            self.requests.insert(0, (self.GET_UPDATES, self.get_updates, None))
+            self.requests.insert(0, (self.GET_UPDATES, self.on_update, None))
 
     def __get_online_list(self, ans, callback, req):
         if self.stop_be is True or not callable(callback):
@@ -114,7 +116,7 @@ class QClient:
                 callback((False, TypeError("Returned invalid type answer format")))
                 self.requests.append(req)
             elif md5(s[0]).hexdigest().encode() != s[1]:
-                callback((False, ValueError("Couldn't validate recieved information"), s))
+                callback((False, ValueError("Couldn't validate received information"), s))
                 self.requests.append(req)
             else:
                 users = [user[2:-1] for user in s[0].split(b", ")]
@@ -179,5 +181,4 @@ class QClient:
         if type(offset) is not int or offset < 0:
             raise ValueError("offset must be int >= 0")
         req = FTC((self.ip, self.port + 1), filename, offset)
-        print(datetime.datetime.now())
         req.request(callback)

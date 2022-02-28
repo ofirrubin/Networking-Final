@@ -6,12 +6,14 @@ from Client.QClient import USER_NOT_FOUND
 
 
 class ConsoleClient(Chatter.Chatter):
-    def __init__(self, ip, port, downloads_path=''):
+    def __init__(self, ip, port, downloads_path='', debug=False):
         self.downloads_path = downloads_path
+        self.debug = debug
         super().__init__(ip, port,
                          on_update=self.console_on_update,
                          on_users_changed=self.console_users_changed,
                          on_msg=self.console_on_message,
+                         on_broadcast=self.console_on_message,
                          on_download=self.console_download_callback)
 
     @classmethod
@@ -21,26 +23,30 @@ class ConsoleClient(Chatter.Chatter):
         if logged_in:
             print(">> Say hi to: ", ', '.join(logged_in))
 
-    @classmethod
-    def console_on_update(cls, updates, failed):
+    def console_on_update(self, updates, failed):
+        if self.debug:
+            print("Failed: ", failed)
         for u in updates:
             try:
                 src, msg = u.decode().split("\n", maxsplit=2)
-                if src == '':
-                    print(">>", msg)
+                if src == '':  # invalid message
+                    continue
+                if src.startswith('+'):
+                    t = 'private'
                 else:
-                    print("<", src, "> says: ", msg)
+                    t = 'broadcast'
+                print('<', t, ', ', src[1:], '> ', msg)
             except UnicodeDecodeError:
                 pass
 
     @classmethod
-    def console_download_callback(cls, ftc, status, resp):
+    def console_download_callback(cls, filename, valid, offset, length, resp):
         path = os.path.join('.', 'Downloads')
         if os.path.isdir(path) is False:
             os.mkdir(path)
-        dest = os.path.join(path, ftc.filename)
-        if status is True:
-            print("\nThe file", dest, " completed downloading! ->", ftc)
+        dest = os.path.join(path, filename + '.download')
+        if valid is True and length == 0:
+            print("\nCompleted downloading! ->", resp)
         else:
             with open(dest, 'ab+') as f:
                 f.write(resp.data)
@@ -69,20 +75,27 @@ class ConsoleClient(Chatter.Chatter):
         logged_out = True
         while logged_out:
             try:
-                super().login(input("Please enter your username: "))
+                x = input("Please enter your username <no white space>: ")
+                if ' ' in x:
+                    continue
+                super().login(x)
                 logged_out = False
             except ClientExceptions.UsernameInUse:
                 print("Username is in use, please use another one.")
             except KeyboardInterrupt:
                 print("\nGood bye!")
                 return False
-            except (ConnectionError, ConnectionResetError, ConnectionRefusedError):
+            except (ValueError, ConnectionError, ConnectionResetError, ConnectionRefusedError):
+                # Value error is raised on socket error, invalid ports or ip.
                 print("Couldn't communicate with the server, make sure it's online and try again.")
                 return False
         return True
 
     def eval_input(self):
         inp = input('>')
+        if self.logged_in is False:
+            print("Logged out, check server status.")
+            exit(0)
         if inp == 'exit':
             self.logout()
             exit(0)
@@ -97,7 +110,7 @@ class ConsoleClient(Chatter.Chatter):
             else:
                 self.message(dest, msg)
         elif inp.startswith('broadcast '):
-            self.broadcast(None, inp[len('broadcast '):])
+            self.broadcast(inp[len('broadcast '):])
         elif inp.startswith('list users'):
             print(self.online_users)
         elif inp.startswith('list files'):
@@ -123,7 +136,7 @@ class ConsoleClient(Chatter.Chatter):
         if self.input_login() is False:
             exit(0)
         try:
-            while True:
+            while self.logged_in:
                 self.eval_input()
         except KeyboardInterrupt:
             print("Logging out.. Good bye!")

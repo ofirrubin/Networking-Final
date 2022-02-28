@@ -37,8 +37,6 @@ class Responder:
         self.database = database
         self.file = None
         self.handle = True
-        if self.debug:
-            print(self)
 
     def build_response(self):
         resp = self.requested_file
@@ -52,6 +50,8 @@ class Responder:
         resp += int.to_bytes(size_sent, self.int_len, "big", signed=False)
         resp += md5(self.file).hexdigest().encode()
         resp += self.padding(self.file)
+        if self.debug:
+            print(self)
         return resp
 
     def respond(self):

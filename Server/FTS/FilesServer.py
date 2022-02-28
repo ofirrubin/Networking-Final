@@ -10,12 +10,11 @@ class FilesServer:
         self.debug = debug
         self.server = UDPServer(ip, port, self.handler, Responder.req_header_len)
 
-    def handler(self, data, addr):
-        Responder(self.server.sock, self.database, addr, data, self.debug).respond()
+    def handler(self, data, address):
+        Responder(self.server.sock, self.database, address, data, self.debug).respond()
 
     def start(self):
         self.server.start()
 
     def stop(self):
         self.server.stop()
-

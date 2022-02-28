@@ -37,7 +37,6 @@ class UDPServer:
         try:
             while self.exit is False:
                 data, addr = self.sock.recvfrom(self.req_len)
-                print("Sending to: ", self.clh, " the following: ", (data, addr))
                 Thread(target=self.clh, args=(data, addr), daemon=self.DAEMON).start()
         except KeyboardInterrupt:
             pass

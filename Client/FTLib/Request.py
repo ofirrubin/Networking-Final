@@ -1,4 +1,5 @@
 from hashlib import md5
+from time import time_ns
 
 
 class Request:
@@ -8,11 +9,13 @@ class Request:
         self.filename = md5(filename.encode()).hexdigest().encode()
         self.offset = offset
         self.length = length
+        self.request_ts = None
 
     def build_request(self):
         return self.filename + \
                int.to_bytes(self.length, length=self.int_len, byteorder="big", signed=False) + \
                int.to_bytes(self.offset, length=self.int_len, byteorder="big", signed=False)
 
-    def send_request(self, socket, addr):
-        socket.sendto(self.build_request(), addr)
+    def send_request(self, socket, address):
+        socket.sendto(self.build_request(), address)
+        self.request_ts = time_ns()

@@ -19,9 +19,10 @@ class DatabaseConnection:
         if username in self.chats.keys():
             del self.chats[username]
 
-    def add_message(self, src, dest, msg):
+    def add_message(self, src, dest, msg, broadcast=False):
         # add message if users exists
         if src in self.users and dest in self.users:
+            src = (b'-' if broadcast else b'+') + src
             if dest not in self.chats:
                 self.chats[dest] = [(src, msg)]
             else:

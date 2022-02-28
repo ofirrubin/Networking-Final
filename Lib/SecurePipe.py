@@ -24,7 +24,10 @@ class SecurePipe:
     @classmethod
     def connect(cls, ip, port):
         conn = socket.socket()
-        conn.connect((ip, port))
+        try:
+            conn.connect((ip, port))
+        except (socket.gaierror, socket.error):
+            raise ValueError("Couldn't connect to the server, please check server availability")
         return SecurePipe(conn, server_side=False)
 
     def client_handshake(self):
@@ -46,7 +49,7 @@ class SecurePipe:
         # Server generates RSA key for single use, client is encrypting AES key
         # and sending it to the server, server uses the AES key to send a verification
         # to the client, if the client verifies (able to decrypt) then it sends encrypted OK msg to the server.
-        # if the server able to decrypt too, it is verified and handshake successed.
+        # if the server able to decrypt too, it is verified and handshake succeed.
         self.conn.sendall(pub_key.save_pkcs1())  # Message size = Key Size
         try:
             key = self.conn.recv(self.ENC)
@@ -64,7 +67,7 @@ class SecurePipe:
             if "PAWS_YEK".encode() == aes.decrypt(self.conn.recv(256)):
                 self.aes = aes
                 return True
-        except Exception:
+        except Exception:  # Many exceptions possible, we don't care which one (socket, decode/encode, encryption etc)
             pass
         return False
 
@@ -95,3 +98,9 @@ class SecurePipe:
 
     def close(self):
         self.conn.close()
+
+    def shutdown(self):
+        try:
+            self.conn.shutdown(0)
+        except socket.error:
+            pass

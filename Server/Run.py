@@ -1,8 +1,8 @@
 import os.path
 
-from Server.ChatServer.CServer import CServer
-from Server.FTS.FilesServer import FilesServer
-from Server.Data.DatabaseConnection import DatabaseConnection
+from ChatServer.CServer import CServer
+from FTS.FilesServer import FilesServer
+from Data.DatabaseConnection import DatabaseConnection
 
 
 class Chat:
