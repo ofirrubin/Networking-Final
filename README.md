@@ -3,6 +3,25 @@ Welcome!
 Chat Application Project - Networking Course Finale
 
 
+How To Run:
+
+
+Download the requirements from:
+```pip3 install -r requirements.txt```
+
+
+Note that the Server and the client are modules so you have to run them with the module argument (-m):
+For further information how to config the server/client you can learn using --help
+
+To run the server:
+```python3 -m Server```
+
+
+To run the console client:
+```python3 -m ConsoleClient```
+
+
+
 The Assignment had 2 parts:
 * Chat-Messaging: TCP based Server&Client to allow passing text messages and details between users.
 * File transferring (FT): UDP based Server&Client to allow downloading files from the server.
