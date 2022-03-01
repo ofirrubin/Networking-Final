@@ -131,5 +131,8 @@ function getDefaultTextBox(){
 }
 
 async function onDownloadClicked(){
-    eel.request_download("file");
+    let downloads = document.getElementById("FilesList");
+    let file = downloads.options[downloads.selectedIndex].value;
+    if (file !== "")
+        eel.request_download(file);
 }

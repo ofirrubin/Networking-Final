@@ -1,7 +1,9 @@
+import os
+
 import eel
 from tendo import singleton
 
-from Client import ClientExceptions
+from Client.QClient import ClientExceptions
 from Client.Chatter import Chatter
 
 client = None
@@ -55,8 +57,18 @@ def logout():
 
 
 @eel.expose
-def request_download():
-    pass
+def request_download(filename):
+    global client
+    if client is None or client.logged_in is False:
+        eel.setLoginView()
+        return
+    if filename not in client.list_files:
+        eel.alert("The files list has updated. Please check again")
+        return
+    fname = os.path.join(get_filepath(), filename)
+    if os.path.isfile(fname):
+        os.remove(fname)
+    client.download_file(filename)
 
 
 @eel.expose
@@ -88,6 +100,7 @@ def check_connection():
             eel.alertUser("You're already logged in as " + client.username().decode())
         else:
             client = None
+
 
 @eel.expose
 def update_users():
@@ -149,8 +162,22 @@ def update_downloads():
         last_updated_files = client.list_files
 
 
+def get_filepath():
+    return os.path.join(".", "Downloads")
+
+
 def on_download(filename, valid, offset, length, resp):
-    pass
+    path = get_filepath()
+    if os.path.isdir(path) is False:
+        os.mkdir(path)
+    dest = os.path.join(path, filename)
+    tmp = dest + '.download'
+    if valid is True and length == 0:
+        os.rename(tmp, dest)
+        eel.alertUser("File downloaded sucessfully!")
+    else:
+        with open(tmp, 'ab+') as f:
+            f.write(resp.data)
 
 
 def main():

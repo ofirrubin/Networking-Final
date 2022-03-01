@@ -2,7 +2,7 @@ from hashlib import md5
 from threading import Thread
 from os.path import getsize, isfile
 
-from Client import ClientExceptions
+from Client.QClient import ClientExceptions
 from Client.FTLib.FTC import FTC
 from Lib.SecurePipe import SecurePipe, salt
 

@@ -1,8 +1,8 @@
 import os
 
-from Client import ClientExceptions
+from Client.QClient import ClientExceptions
 from Client import Chatter
-from Client.QClient import USER_NOT_FOUND
+from Client.QClient.QClient import USER_NOT_FOUND
 
 
 class ConsoleClient(Chatter.Chatter):

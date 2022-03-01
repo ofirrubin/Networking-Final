@@ -1,6 +1,6 @@
 from threading import Thread
 
-from Client.QClient import QClient
+from Client.QClient.QClient import QClient
 from time import sleep
 
 
@@ -38,6 +38,8 @@ class Chatter:
             sleep(self.INTERVALS)
 
     def _set_list_files(self, files_):
+        if '' in files_:
+            files_.remove(files_)
         self.list_files = files_
         if callable(self.on_list_files_changed):
             self.on_list_files_changed()
