@@ -68,3 +68,7 @@ function setUserNameInUse(){
             username.placeholder = "Username in use! Try another one";
         }
 
+eel.expose(closeWindow)
+function closeWindow(){
+    window.open('', '_self').close();
+}

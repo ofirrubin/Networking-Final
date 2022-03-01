@@ -29,16 +29,16 @@ function clearDrop(dropname){
     }
 }
 eel.expose(addToDrop);
-function addToDrop(dropname, val){
-    let downloadable = document.getElementById(dropname);
+function addToDrop(name, val){
+    let downloadable = document.getElementById(name);
     let file = document.createElement("option");
     file.value = val;
     file.text = val;
     downloadable.appendChild(file);
 }
 eel.expose(removeFromDrop);
-function removeFromDrop(dropname, val){
-    let dropdown = document.getElementById(dropname);
+function removeFromDrop(name, val){
+    let dropdown = document.getElementById(name);
     for (let i=0; i<dropdown.length; i++) {
         if (dropdown.options[i].value === val)
             dropdown.removeChild(dropdown.options[i]);
@@ -72,40 +72,42 @@ function onMsgSent(to, message){
     let msg = getDefaultTextBox();
     let allMsgs = document.getElementById("ChatsDialog");
     msg.style.float = "right";
+    msg.style.marginLeft = "30px";
+
     msg.value = "Message to " + to + ": " + message;
     msg.textContent = msg.value;
+
     allMsgs.appendChild(msg);
-    allMsgs.appendChild(getLineBreak());
 }
 eel.expose(onBroadcastSent);
 function onBroadcastSent(message){
     let msg = getDefaultTextBox();
     let allMsgs = document.getElementById("ChatsDialog");
     msg.style.float = "right";
+    msg.style.marginLeft = "30px";
     msg.value = "Broadcast: " + message;
     msg.textContent = msg.value;
     allMsgs.appendChild(msg);
-    allMsgs.appendChild(getLineBreak());
 }
 eel.expose(onMsgRcv);
 function onMsgRcv(from, message){
     let allMsgs = document.getElementById("ChatsDialog");
     let msg = getDefaultTextBox();
     msg.style.float = "left";
+    msg.style.marginRight = "30px";
     msg.value = "Message from " + from + ": " + message;
     msg.textContent = msg.value;
     allMsgs.appendChild(msg);
-    allMsgs.appendChild(getLineBreak());
 }
 eel.expose(onBroadcastRcv);
 function onBroadcastRcv(from, message){
     let allMsgs = document.getElementById("ChatsDialog");
     let msg = getDefaultTextBox();
     msg.style.float = "left";
+    msg.style.marginRight = "30px";
     msg.value = "Broadcast from " + from + ": " + message;
     msg.textContent = msg.value;
     allMsgs.appendChild(msg);
-    allMsgs.appendChild(getLineBreak());
 }
 eel.expose(systemMessage);
 function systemMessage(message_text){
@@ -115,17 +117,17 @@ function systemMessage(message_text){
     msg.value = message_text;
     msg.textContent = message_text;
     allMsgs.appendChild(msg);
-    allMsgs.appendChild(getLineBreak());
 }
 function getDefaultTextBox(){
-    let msg = document.createElement("p");
+    let msg = document.createElement("div");
+    msg.style.display = "block";
+    msg.style.position = "sticky";
+    msg.style.lineBreak = "loose";
     msg.style.color = "black";
+    msg.style.padding = "10px";
+    msg.style.width = "90%";
     msg.style.fontFamily = "Roboto Light";
     return msg;
-}
-
-function getLineBreak(){
-    return document.createElement("br");
 }
 
 async function onDownloadClicked(){

@@ -1,5 +1,6 @@
 from hashlib import md5
 from threading import Thread
+from os.path import getsize, isfile
 
 from Client import ClientExceptions
 from Client.FTLib.FTC import FTC
@@ -37,6 +38,8 @@ class QClient:
         self.on_update = print
         self.logged_in = False
         self.be = Thread(target=self.__backend, daemon=self.DAEMON)
+        self.downloads = {}
+        self.downloads_callbacks = {}
         self.stop_be = False
 
     def login(self, username):
@@ -174,9 +177,33 @@ class QClient:
             self.requests.append((self.LIST_FILES, callback, None))
 
     def download_file(self, filename, callback, offset=0):
+        if filename in self.downloads:
+            raise FileExistsError("File is already downloading")
         if not callable(callback):
             raise TypeError("You must include callable callback, cancelling download.")
         if type(offset) is not int or offset < 0:
             raise ValueError("offset must be int >= 0")
-        req = FTC((self.ip, self.port + 1), filename, offset)
-        req.request(callback)
+        self.downloads_callbacks[filename] = callback
+        self.downloads[filename] = FTC((self.ip, self.port + 1), filename, offset)
+        self.downloads[filename].request(self.__override_on_download_complete)
+
+    def __override_on_download_complete(self, filename, valid, offset, length, resp):
+        self.downloads_callbacks[filename](filename, valid, offset, length, resp)
+        if valid is True and length == 0 and filename in self.downloads:
+            del self.downloads[filename]
+            del self.downloads_callbacks[filename]
+
+    def resume_download(self, filename, loadfile=None, loadfile_callback=None):
+        if filename not in self.downloads:
+            if isfile(loadfile):
+                self.downloads[filename] = FTC((self.ip, self.port + 1), filename, getsize(loadfile))
+                self.downloads[filename].request(loadfile_callback)
+                return True
+            return False
+        else:
+            return self.downloads[filename].resume()
+
+    def pause_download(self, filename):
+        if filename not in self.downloads:
+            return False
+        self.downloads[filename].pause()

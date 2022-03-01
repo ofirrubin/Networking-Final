@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from Client.Chatter import Chatter
-from Server.Run import Chat
+from Server.__main__ import Chat
 
 IP = "127.0.0.1"
 PORT = 15003

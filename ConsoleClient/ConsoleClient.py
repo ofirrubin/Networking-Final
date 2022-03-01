@@ -40,16 +40,36 @@ class ConsoleClient(Chatter.Chatter):
                 pass
 
     @classmethod
+    def get_filepath(cls):
+        return os.path.join(".", "Downloads")
+
+    @classmethod
     def console_download_callback(cls, filename, valid, offset, length, resp):
-        path = os.path.join('.', 'Downloads')
+        path = cls.get_filepath()
         if os.path.isdir(path) is False:
             os.mkdir(path)
-        dest = os.path.join(path, filename + '.download')
+        dest = os.path.join(path, filename)
+        tmp = dest + '.download'
         if valid is True and length == 0:
+            os.rename(tmp, dest)
             print("\nCompleted downloading! ->", resp)
         else:
-            with open(dest, 'ab+') as f:
+            with open(tmp, 'ab+') as f:
                 f.write(resp.data)
+
+    def console_resume_download(self, filename):
+        p = self.get_filepath()
+        f_temp = os.path.join(p, filename + ".download")
+        if os.path.isfile(f_temp) is False:
+            print("File to be resumed not found (on disk). Try the following..\n"
+                  "1) Check if file finished downloading."
+                  "2) Try download the file using download command "
+                  "You may also place ", filename, ".download file at the Downloads directory and try again.")
+            return False
+        if filename in self.now_downloading:
+            return self.resume_download(filename)
+        else:
+            return self.load_resume_file(filename, f_temp)
 
     @classmethod
     def console_on_message(cls, verified, feedback, msg):
@@ -67,6 +87,9 @@ class ConsoleClient(Chatter.Chatter):
         Broadcast: broadcast <message>
         Check Online Users: list users
         Check Available Files To Download: list files
+        Download a file: Download <filename>
+        Pause a download: Pause <filename>
+        Resume a file: Resume <filename>
         Exit: exit
         Hit the enter to proceed & update the screen (for incoming messages etc.)
         Any other to print this help""")
@@ -125,8 +148,16 @@ class ConsoleClient(Chatter.Chatter):
                     os.remove(dest)
                 self.download_file(filename)
             except FileNotFoundError:
-
                 print(filename, " was not found!")
+            except FileExistsError:
+                print("The file is already downloading at the background!")
+        elif inp.startswith('pause'):
+            filename = inp[len('pause '):]
+            if self.client.pause_download(filename) is False:
+                print("File haven't been downloaded yet or completed downloading.")
+        elif inp.startswith('resume'):
+            filename = inp[len('resume '):]
+            self.console_resume_download(filename)
         elif inp != '':
             self.help_()
         return True
@@ -142,15 +173,3 @@ class ConsoleClient(Chatter.Chatter):
             print("Logging out.. Good bye!")
             self.logout()
             exit(0)
-
-
-def main():
-    c = ConsoleClient("127.0.0.1", 12000)
-    c.start(downloads_path='')
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass

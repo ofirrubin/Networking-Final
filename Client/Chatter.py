@@ -31,8 +31,6 @@ class Chatter:
         Thread(target=self.update_online_list, daemon=False).start()
 
     def update_online_list(self):
-        print("Update online list inside...")
-        print(self.client.logged_in)
         while self.client.logged_in:
             self.client.get_online_list(self.__set_online_list)
             sleep(self.INTERVALS)
@@ -42,7 +40,7 @@ class Chatter:
     def _set_list_files(self, files_):
         self.list_files = files_
         if callable(self.on_list_files_changed):
-            self.list_files_changed()
+            self.on_list_files_changed()
 
     def __set_online_list(self, status_feedback):
         status, users = status_feedback
@@ -69,6 +67,15 @@ class Chatter:
     def download_file(self, filename):
         self.client.download_file(filename, self.on_download)
 
+    def pause_download(self, filename):
+        return self.client.pause_download(filename)
+
+    def resume_download(self, filename):
+        return self.client.resume_download(filename)
+
+    def load_resume_file(self, filename, filepath):
+        return self.client.resume_download(filename, filepath, self.on_download)
+
     def broadcast(self, msg):
         return self.client.broadcast(self.on_broadcast, msg)
 
@@ -79,8 +86,13 @@ class Chatter:
     def logged_in(self):
         return self.client.list_files
 
-    def shutdown(self):
-        return self.client.shutdown()
-
+    @property
     def username(self):
         return self.client.username
+
+    @property
+    def now_downloading(self):
+        return self.client.downloads
+
+    def shutdown(self):
+        return self.client.shutdown()

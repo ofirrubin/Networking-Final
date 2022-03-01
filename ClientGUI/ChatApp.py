@@ -65,7 +65,7 @@ def send_msg(send_to, msg):
     print("Sending message to: ", send_to, " saying: ", msg)
     if client is None or client.logged_in is False:
         eel.setLoginView()
-        return
+        return False
     if "\n" in send_to:
         return False
     if send_to == '':
@@ -88,6 +88,14 @@ def check_connection():
             eel.alertUser("You're already logged in as " + client.username().decode())
         else:
             client = None
+
+@eel.expose
+def update_users():
+    global client
+    if client is None or client.logged_in is False:
+        return
+    for user in client.online_users:
+        eel.addToDrop("usersList", user)
 
 
 def on_update(updates, failed):
@@ -123,6 +131,7 @@ def on_users_changed(logged_in, logged_out):
         eel.systemMessage('Good bye ' + user)  # Show message to user
 
 
+@eel.expose
 def update_downloads():
     global last_updated_files
     if client is None or client.logged_in is False:
@@ -140,15 +149,7 @@ def update_downloads():
         last_updated_files = client.list_files
 
 
-def update_users():
-    global client
-    if client is None or client.logged_in is False:
-        return
-    for user in client.online_users:
-        eel.addToDrop("usersList", user)
-
-
-def download_callback(cls, filename, valid, offset, length, resp):
+def on_download(filename, valid, offset, length, resp):
     pass
 
 
@@ -161,15 +162,19 @@ def main():
         exit(0)
 
     global args
-    args = [on_update, on_users_changed, on_msg, on_broadcast, update_downloads, ]
+    args = [on_update, on_users_changed, on_msg, on_broadcast, on_download, update_downloads]
     eel.init("Web")
     eel.start("main.html", block=False)
     while True:
         eel.sleep(0.01)
 
 
+def close_window():
+    eel.closeWindow()
+
+
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        pass
+        close_window()
