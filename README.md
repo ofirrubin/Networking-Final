@@ -21,8 +21,8 @@ To run the console client:
 ```python3 -m ConsoleClient```
 
 
-Demo:
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/tiK175t1YfYE/0.jpg)](https://www.youtube.com/watch?v=tiK175t1YfYE)
+Demo video (click to go to Youtube):
+[![IMAGE ALT TEXT HERE](https://github.com/ofirrubin/Networking-Final/blob/f3fccf26666d5cb88cd8f6defb21553c5ca3087b/Media/Login%20Screen.png)](https://www.youtube.com/watch?v=tiK175t1YfYE)
 
 
 
