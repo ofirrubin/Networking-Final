@@ -1,4 +1,3 @@
-import os.path
 from sys import argv
 from argparse import ArgumentParser, ArgumentTypeError, ArgumentError
 from Server.ChatServer.ChatServer import CServer
@@ -50,4 +49,3 @@ if __name__ == "__main__":
         pass
     except (ArgumentTypeError, ArgumentError):
         print("Couldn't parse your input, please try again..")
-
