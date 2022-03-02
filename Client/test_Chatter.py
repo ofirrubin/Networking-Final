@@ -26,7 +26,7 @@ class TestChatter(TestCase):
 
     def test__set_list_files(self):
         files = list(server.db.list_files())
-        self.assertEquals(files, self.client2.list_files)
+        self.assertEqual(files, self.client2.list_files)
 
     def test_message(self):
         client1.message(cl2n, "Hi")
@@ -39,8 +39,8 @@ class TestChatter(TestCase):
         for u in updates:
             sender, msg = u.split("\n", maxsplit=1)
             if sender != '':  # Direct Message, otherwise Broadcast
-                self.assertEquals(sender, cl2n)
-            self.assertEquals(msg.replaace("+", "", 1).replace("-", "", 1), "Hi")
+                self.assertEqual(sender, cl2n)
+            self.assertEqual(msg.replaace("+", "", 1).replace("-", "", 1), "Hi")
 
     def on_users_changed(self, logged_in, logged_out):
         if logged_in:

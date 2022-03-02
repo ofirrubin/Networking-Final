@@ -8,6 +8,7 @@ def un_pad(data):
     return data
 
 
+# File transferring response header
 class Response:
     NOT_PROCESSED = b"NOT_PROCESSED_YET"
     SYNTAX_ERR = b"UNKNOWN_FORMAT"
@@ -89,8 +90,8 @@ class Response:
                "\n, error: " + str(self.error)
 
     @classmethod
-    def get_overflow(cls, filename):
-        r = Response(b'')
+    def get_overflow(cls, filename, address):
+        r = Response(b'', address)
         r.filename = filename
         r.error = cls.OVERFLOW_ERR
         return r

@@ -28,8 +28,8 @@ class TestFTC(TestCase):
         f = FTC((self.ip, self.port), basename(self.tmp.name))
         self.rcv = b''
 
-        def download_callback(ftc, status, resp):
-            if status is False:
+        def download_callback(filename, valid, resp, offset, length):
+            if valid and length != 0:
                 self.rcv += resp.data
             else:
                 self.assertEqual(self.rcv, self.data)

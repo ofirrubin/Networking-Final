@@ -2,6 +2,7 @@ from hashlib import md5
 from time import time_ns
 
 
+# File download request header
 class Request:
     int_len = 4
 
