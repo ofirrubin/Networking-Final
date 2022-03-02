@@ -28,6 +28,8 @@ class Chatter:
         self.list_files = []
         self.chats = {}
         self.client.login(username.encode())
+        if self.client.logged_in is False:
+            return
         Thread(target=self.update_online_list, daemon=False).start()
 
     def update_online_list(self):

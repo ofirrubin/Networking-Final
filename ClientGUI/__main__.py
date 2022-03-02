@@ -37,6 +37,8 @@ def login(ip, port, username):
         global program_args
         client = Chatter(ip, port, *program_args)
         client.login(username)
+        if client.logged_in is False:
+            return eel.alertUser("Failed to login, please try again")
     except ValueError:  # either IP or port is incorrect
         eel.setInvalidIP()
         return eel.setInvalidPort()

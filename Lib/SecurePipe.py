@@ -60,15 +60,14 @@ class SecurePipe:
             except socket.error:
                 pass
             return False
-
-        aes = AES.AESCipher(key)
-        self.conn.sendall(aes.encrypt("KEY_SWAP".encode()))
         try:
+            aes = AES.AESCipher(key)
+            self.conn.sendall(aes.encrypt("KEY_SWAP".encode()))
             if "PAWS_YEK".encode() == aes.decrypt(self.conn.recv(256)):
                 self.aes = aes
                 return True
-        except Exception:  # Many exceptions possible, we don't care which one (socket, decode/encode, encryption etc)
-            pass
+        except (socket.error, UnicodeEncodeError, ValueError, TypeError, ZeroDivisionError):
+            pass  # AES can have ZeroDivisionError, EncodeError
         return False
 
     def send(self, data):

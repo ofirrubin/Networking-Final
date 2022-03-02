@@ -53,6 +53,9 @@ class QClient:
         if b"\n" in username:
             raise ValueError("Username nor password can include new line.")
         self.connection = SecurePipe.connect(self.ip, self.port)
+        if self.connection.secured is False:
+            print("Unable to establish secure connection.")
+            return
         print("Established secure connection..")
         self.connection.send(b"\n".join([self.LOGIN, username, salt()]))
         status = self.connection.recv()

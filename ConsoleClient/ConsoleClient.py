@@ -102,7 +102,8 @@ class ConsoleClient(Chatter.Chatter):
                 if ' ' in x:
                     continue
                 super().login(x)
-                logged_out = False
+                if self.logged_in:
+                    logged_out = False
             except ClientExceptions.UsernameInUse:
                 print("Username is in use, please use another one.")
             except KeyboardInterrupt:
