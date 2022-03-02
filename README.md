@@ -20,10 +20,13 @@ To run the server:
 To run the console client:
 ```python3 -m ConsoleClient```
 
+To run the GUI client:
+
+
+Since I can't do Wiki with private repo, I'll add the images and examples below.
 
 Demo video (click to go to Youtube):
-[![IMAGE ALT TEXT HERE](https://github.com/ofirrubin/Networking-Final/blob/f3fccf26666d5cb88cd8f6defb21553c5ca3087b/Media/Login%20Screen.png)](https://www.youtube.com/watch?v=tiK175t1YfYE)
-
+[![Watch on Youtube](https://github.com/ofirrubin/Networking-Final/blob/f3fccf26666d5cb88cd8f6defb21553c5ca3087b/Media/Login%20Screen.png)](https://www.youtube.com/watch?v=tiK175t1YfYE)
 
 
 The Assignment had 2 parts:
@@ -62,3 +65,22 @@ The FT part allows the following functionality:
     Dynamic Window Size = Using the RTT-like and the size left to be received we create a relative ratio compared to the last ratio and changing the window size accordingly.
 
     The client will also use the hash received by the server to validate each block of data it receives, so it can send the request again (allowing retransmitting per block)
+    
+    
+    
+GUI:
+A while ago I found the ``eel`` package which usages javascript-html as frontend to the python program.
+I found this opportunity to learn JavaScript, CSS and HTML and create this simple UI which would've been way harder design in Tkinter.
+After learning JS, it was easy to link the UI to the backend since I already created the Console application.
+
+Examples of the UI:
+
+
+<img src="https://github.com/ofirrubin/Networking-Final/blob/f3fccf26666d5cb88cd8f6defb21553c5ca3087b/Media/Login%20Screen.png" alt="Login page" width="400">
+
+<img src="https://github.com/ofirrubin/Networking-Final/blob/d270eef949bfd18ace95fc7f5346279dfb07b64c/Media/Home%20:%20Messages.png" alt="Messages Page" width="400">
+
+<img src="https://github.com/ofirrubin/Networking-Final/blob/d270eef949bfd18ace95fc7f5346279dfb07b64c/Media/Files%20Dropdown.png" alt="Files Dropdown" width="400">
+
+<img src="https://github.com/ofirrubin/Networking-Final/blob/d270eef949bfd18ace95fc7f5346279dfb07b64c/Media/Users:Brodcast%20Dropdown.png" alt="Message Type Dropdown" width="400">
+
