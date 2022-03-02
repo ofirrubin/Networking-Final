@@ -83,7 +83,7 @@ class ConsoleClient(Chatter.Chatter):
     def help_():
         print("""Welcome!
         Syntax map:
-        Message: msg <username> <message>
+        Message: msg <username> <newline> <message>
         Broadcast: broadcast <message>
         Check Online Users: list users
         Check Available Files To Download: list files
@@ -98,9 +98,7 @@ class ConsoleClient(Chatter.Chatter):
         logged_out = True
         while logged_out:
             try:
-                x = input("Please enter your username <no white space>: ")
-                if ' ' in x:
-                    continue
+                x = input("Please enter your username: ")
                 super().login(x)
                 if self.logged_in:
                     logged_out = False
@@ -124,16 +122,13 @@ class ConsoleClient(Chatter.Chatter):
             self.logout()
             exit(0)
         if inp.startswith('msg '):
-            inp = inp[len('msg '):]
-            if ' ' not in inp:
-                print("Invalid syntax, to message use: <msg> <dest> <msg_txt>")
-                return True
-            dest, msg = inp.split(' ', maxsplit=1)
+            dest = inp[len('msg '):]
             if dest.encode() == self.username:
                 print("You can't message your self!")
             elif dest not in self.online_users:
                 print("User not online, check online list and try again")
             else:
+                msg = input("Message: ")
                 self.message(dest, msg)
         elif inp.startswith('broadcast '):
             self.broadcast(inp[len('broadcast '):])
