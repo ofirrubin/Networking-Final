@@ -3,13 +3,14 @@ from hashlib import md5
 
 
 class DatabaseConnection:
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, debug=False, **kwargs):
         # Simple temp database
         self.chats = {}  # messages of each client
         self.users = {}  # username hash: is_logged_in, might include other info..
         self.root = root
         self.filter_ = None
         self.files = {}
+        self.debug = debug
         self.update_list_files()  # retrieve files from file-system
 
     def remove_user(self, username):
@@ -43,6 +44,8 @@ class DatabaseConnection:
         self.files = {}
         for file in self.__list_files():
             self.files[md5(file.encode()).hexdigest().encode()] = file
+        if self.debug is True:
+            print("List files updated <cwd , ", os.path.abspath(os.getcwd()), " | src ", self.root, ">: ", self.files)
 
     def __list_files(self):
         # update list files, with file filter (ends with) if required

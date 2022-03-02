@@ -10,8 +10,9 @@ class Chat:
     def __init__(self, ip, port, files_root, debug):
         self.ip = ip
         self.port = port
-        self.db = DatabaseConnection(root=files_root)
-        self.chat_server = CServer(ip, port, self.db)
+        self.debug = debug
+        self.db = DatabaseConnection(root=files_root, debug=debug)
+        self.chat_server = CServer(ip, port, self.db, debug)
         self.files_server = FilesServer(ip, port + 1, self.db, debug)
 
     def start(self):
@@ -28,7 +29,8 @@ class Chat:
 if __name__ == "__main__":
     try:
         parser = ArgumentParser(description="Chat Server | Message over TCP & Download file over UDP")
-        parser.add_argument("--debug", metavar="d", default=False, help="Use True for debug, default is False")
+        parser.add_argument("--debug", metavar="d", type=bool, default=False,
+                            help="Use True for debug, default is False")
         parser.add_argument("-ip", metavar='-i', type=str, default="127.0.0.1",
                             help="Select IPv4 you want the server to run at.")
         parser.add_argument("-port", metavar='-p', type=int, default="12000",
@@ -38,6 +40,7 @@ if __name__ == "__main__":
         parser.add_argument('-files', metavar='-f', type=str, default='',
                             help="Select the directory which includes the files available for the user to download.")
         args = parser.parse_args(argv[1:])
+        print("Setting debug as: ", args.debug)
         chat = Chat(ip=args.ip, port=args.port, files_root=args.files, debug=args.debug)
         chat.start()
         while input() != 'exit':

@@ -128,7 +128,9 @@ class ConsoleClient(Chatter.Chatter):
                 print("Invalid syntax, to message use: <msg> <dest> <msg_txt>")
                 return True
             dest, msg = inp.split(' ', maxsplit=1)
-            if dest not in self.online_users:
+            if dest.encode() == self.username:
+                print("You can't message your self!")
+            elif dest not in self.online_users:
                 print("User not online, check online list and try again")
             else:
                 self.message(dest, msg)

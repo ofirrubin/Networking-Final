@@ -10,6 +10,11 @@ function sendMsg(){
 }
 
 /* Selection drop functions - search, add and remove options*/
+eel.expose(getDropValues)
+function getDropValues(dropName){
+    let selectElement = document.querySelectorAll('[name=' + dropName + ']');
+    return [...selectElement[0].options].map(o => o.value);
+}
 eel.expose(containsInDrop)
 function containsInDrop(dropName, value){
     let dropdown = document.getElementById(dropName);

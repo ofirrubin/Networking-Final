@@ -14,8 +14,8 @@ last_updated_files = []
 @eel.expose
 def login(ip, port, username):
     global client
-    if client is not None and client.logged_in:
-        eel.setChatView()
+    check_connection(False)
+    if client is not None:
         return
     try:
         if any([int(x) > 255 for x in ip.split(".")]):
@@ -52,6 +52,7 @@ def logout():
         client.logout()
         # It might take a moment for the client to shutdown at the background. Setting it to None allows us to continue
         client = None
+    eel.clearDrop("FilesList")
     eel.setLoginView()
     eel.sleep(1)
 
@@ -63,7 +64,7 @@ def request_download(filename):
         eel.setLoginView()
         return
     if filename not in client.list_files:
-        eel.alert("The files list has updated. Please check again")
+        eel.alertUser("The files list has updated. Please check again")
         return
     fname = os.path.join(get_filepath(), filename)
     if os.path.isfile(fname):
@@ -87,17 +88,22 @@ def send_msg(send_to, msg):
     return True
 
 
+def on_login():
+    eel.setChatView()
+    update_users()
+    global last_updated_files
+    last_updated_files = []
+    update_downloads()
+
+
 @eel.expose
-def check_connection():
+def check_connection(display_msg=True):
     global client
     if client is not None:
         if client.logged_in:
-            eel.setChatView()
-            update_users()
-            global last_updated_files
-            last_updated_files = []
-            update_downloads()
-            eel.alertUser("You're already logged in as " + client.username().decode())
+            on_login()
+            if display_msg is True:
+                eel.alertUser("You're already logged in as " + client.username.decode())
         else:
             client = None
 
@@ -127,6 +133,8 @@ def on_msg(verified, feedback, msg):
     if verified:
         username, msg = msg.split("\n", maxsplit=1)
         eel.onMsgSent(username, msg)
+    else:
+        print(feedback, " ", msg)
 
 
 def on_broadcast(verified, feedback, msg):
@@ -150,10 +158,8 @@ def update_downloads():
     if client is None or client.logged_in is False:
         eel.setLoginView()
     else:
-        if client.list_files == last_updated_files:
-            return
         for f in client.list_files:
-            if eel.containsInDrop("FilesList", f):
+            if eel.containsInDrop("FilesList", f)() is False:
                 eel.addToDrop("FilesList", f)
         # Remove files no longer available
         to_remove = [f for f in last_updated_files if f not in client.list_files]

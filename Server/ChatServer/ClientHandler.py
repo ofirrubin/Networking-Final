@@ -25,7 +25,7 @@ class ClientHandler:
     DIVIDER = b'\n'
     DIVIDER_DEC = DIVIDER.decode()
 
-    def __init__(self, server,  connection, debug=False):
+    def __init__(self, server, connection, debug=False):
         self.server = server  # Contains the database, notifies others on change.
         self.connection = connection
         self.username = None
@@ -54,10 +54,10 @@ class ClientHandler:
                     self.logged_in = False
                 sleep(0.2)
         except (ConnectionResetError, BrokenPipeError):
-            self.logout()
+            pass  # logs out anyways
         # Close connection
         self.logout()
-        if self.debug:
+        if self.debug is True:
             print(self.username, " Logged out, connection closed")
 
     def login(self, credentials=None):
@@ -82,6 +82,8 @@ class ClientHandler:
             return
         # Register user
         self.username = username
+        if self.server.debug is True:
+            print("User logged in as <", self.username, ">")
         self.logged_in = True
         self.server.db.users[username] = {"conn_alive": self.logged_in}
         self.connection.send(self.USERNAME_REGISTERED)

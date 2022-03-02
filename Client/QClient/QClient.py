@@ -67,6 +67,10 @@ class QClient:
     def logout(self):
         self.stop_be = True
         self.logged_in = False
+        try:
+            self.connection.shutdown()
+        except AttributeError:  # If connection is None
+            pass
 
     def shutdown(self):
         self.connection.shutdown()
@@ -87,6 +91,7 @@ class QClient:
                     self.requests.remove(r)
         except (ConnectionResetError, ConnectionError, BrokenPipeError):
             self.logout()
+        self.logged_in = False
 
     def __call_req(self, request_type, callback, request_args, r):
         ans = self.connection.recv()

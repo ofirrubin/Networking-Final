@@ -39,7 +39,7 @@ class Chatter:
 
     def _set_list_files(self, files_):
         if '' in files_:
-            files_.remove(files_)
+            files_.remove('')
         self.list_files = files_
         if callable(self.on_list_files_changed):
             self.on_list_files_changed()
