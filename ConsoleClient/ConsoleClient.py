@@ -39,13 +39,11 @@ class ConsoleClient(Chatter.Chatter):
             except UnicodeDecodeError:
                 pass
 
-    @classmethod
-    def get_filepath(cls):
-        return os.path.join(".", "Downloads")
+    def get_filepath(self):
+        return os.path.join(self.downloads_path, "Downloads")
 
-    @classmethod
-    def console_download_callback(cls, filename, valid, offset, length, resp):
-        path = cls.get_filepath()
+    def console_download_callback(self, filename, valid, offset, length, resp):
+        path = self.get_filepath()
         if os.path.isdir(path) is False:
             os.mkdir(path)
         dest = os.path.join(path, filename)
