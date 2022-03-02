@@ -213,16 +213,14 @@ def main(settings):
     except (ArgumentError, ArgumentTypeError):
         print("Unable to parse your arguments. try again or use help to see syntax")
         return
-    if settings.mode not in web_ops:
-        settings.mode = 'default'
-    if isdir(settings.dir) is False:
-        settings.dir = '.'
+
     global program_args
     global path
+    if settings.mode not in web_ops:
+        settings.mode = 'default'
     program_args = [on_update, on_users_changed, on_msg, on_broadcast, on_download, update_downloads]
-    path = settings.dir
-    p = join(abspath(getcwd()), "ClientGUI", "Web")
-    eel.init(p)
+    path = '.' if isdir(settings.dir) is False else settings.dir
+    eel.init(join(abspath(getcwd()), "ClientGUI", "Web"))
     eel.start("main.html", block=False, mode=settings.mode, port=0)
     while True:
         eel.sleep(0.01)
