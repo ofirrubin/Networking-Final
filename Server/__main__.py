@@ -39,9 +39,9 @@ if __name__ == "__main__":
                                  "while <port> + 1 will be used for the UDP server")
         parser.add_argument('-files', metavar='-f', type=str, default='',
                             help="Select the directory which includes the files available for the user to download.")
-        args = parser.parse_args(argv[1:])
-        print("Setting debug as: ", args.debug)
-        chat = Chat(ip=args.ip, port=args.port, files_root=args.files, debug=args.debug)
+        program_args = parser.parse_args(argv[1:])
+        print("Setting debug as: ", program_args.debug)
+        chat = Chat(ip=program_args.ip, port=program_args.port, files_root=program_args.files, debug=program_args.debug)
         chat.start()
         while input() != 'exit':
             continue

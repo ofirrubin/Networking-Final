@@ -1,14 +1,18 @@
-import os
-
-import eel
+from os import mkdir, remove, rename
+from os.path import isdir, isfile, join
 from tendo import singleton
+from argparse import ArgumentParser, ArgumentTypeError, ArgumentError
 
 from Client.QClient import ClientExceptions
 from Client.Chatter import Chatter
 
+
+import eel
+
 client = None
-args = []
+program_args = []
 last_updated_files = []
+path = '.'
 
 
 @eel.expose
@@ -32,8 +36,8 @@ def login(ip, port, username):
         return
 
     try:
-        global args
-        client = Chatter(ip, port, *args)
+        global program_args
+        client = Chatter(ip, port, *program_args)
         client.login(username)
     except ValueError:  # either IP or port is incorrect
         eel.setInvalidIP()
@@ -66,9 +70,9 @@ def request_download(filename):
     if filename not in client.list_files:
         eel.alertUser("The files list has updated. Please check again")
         return
-    fname = os.path.join(get_filepath(), filename)
-    if os.path.isfile(fname):
-        os.remove(fname)
+    fname = join(get_filepath(), filename)
+    if isfile(fname):
+        remove(fname)
     client.download_file(filename)
 
 
@@ -169,24 +173,29 @@ def update_downloads():
 
 
 def get_filepath():
-    return os.path.join(".", "Downloads")
+    global path
+    return join(path, "Downloads")
 
 
 def on_download(filename, valid, offset, length, resp):
     path = get_filepath()
-    if os.path.isdir(path) is False:
-        os.mkdir(path)
-    dest = os.path.join(path, filename)
+    if isdir(path) is False:
+        mkdir(path)
+    dest = join(path, filename)
     tmp = dest + '.download'
     if valid is True and length == 0:
-        os.rename(tmp, dest)
+        rename(tmp, dest)
         eel.alertUser("File downloaded sucessfully!")
     else:
         with open(tmp, 'ab+') as f:
             f.write(resp.data)
 
 
-def main():
+def close_window():
+    eel.closeWindow()
+
+
+def main(settings):
     # This program can run as single instance only. Check it using singleton module.
     try:
         me = singleton.SingleInstance()
@@ -194,20 +203,29 @@ def main():
         print("Another instance of this program is running. Please close it first")
         exit(0)
 
-    global args
-    args = [on_update, on_users_changed, on_msg, on_broadcast, on_download, update_downloads]
+    web_ops = ['chrome', 'default', 'chrome-app', 'electron']
+    try:
+        parser = ArgumentParser('Graphical Client Chat Application')
+        parser.add_argument('-mode', metavar='w', default='default',
+                            help='Choose which "engine" to run the program on: available options: ' + " ,".join(web_ops))
+        parser.add_argument('-dir', metavar='d', default=".",
+                            help='Choose a path in which Downloads folder will be created &'
+                                 ' Files will be saved.')
+        settings = parser.parse_args(settings)
+    except (ArgumentError, ArgumentTypeError):
+        print("Unable to parse your arguments. try again or use help to see syntax")
+        return
+    if settings.mode not in web_ops:
+        settings.mode = 'default'
+    if isdir(settings.dir) is False:
+        settings.dir = '.'
+
+    global program_args
+    global path
+    program_args = [on_update, on_users_changed, on_msg, on_broadcast, on_download, update_downloads]
+    path = settings.dir
+
     eel.init("Web")
-    eel.start("main.html", block=False)
+    eel.start("main.html", block=False, mode=settings.mode)
     while True:
         eel.sleep(0.01)
-
-
-def close_window():
-    eel.closeWindow()
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        close_window()
