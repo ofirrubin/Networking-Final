@@ -2,7 +2,7 @@ import datetime
 
 from Client.FTLib.FTC import FTC
 
-
+# IGNORE!! Not updated! Won't work
 def download_handler(ftc, status, resp):
     if status is True:
         end = datetime.datetime.now()
