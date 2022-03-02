@@ -21,7 +21,7 @@ To run the console client:
 ```python3 -m ConsoleClient```
 
 To run the GUI client:
-
+```python3 -m ClientGUI```
 
 Since I can't do Wiki with private repo, I'll add the images and examples below.
 
@@ -72,9 +72,6 @@ GUI:
 A while ago I found the ``eel`` package which usages javascript-html as frontend to the python program.
 I found this opportunity to learn JavaScript, CSS and HTML and create this simple UI which would've been way harder design in Tkinter.
 After learning JS, it was easy to link the UI to the backend since I already created the Console application.
-There are two disadvantages for using the ``eel``:
-1. You need to have supported 'engine': eel supports mainly chrome and electron but it can also convert it to the user default webbrowser. I figured since chrome is already the most used webbrowser, it should be fine.
-2.```eel``` is using Network-Socket (TCP) as the PIPE between the backend and the frontend. As a result you can't run the same program twice without changing the parameters (port number), For now I chose to use the module ```teno``` which allows us to block multi-instances of the program using Singletone, I might change that later. 
 
 Examples of the UI:
 
