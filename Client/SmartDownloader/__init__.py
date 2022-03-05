@@ -161,11 +161,3 @@ class DownloadUnit:
         while pos != self.e_range:
             yield self.agents[pos].tmp_file
             pos = self.agents[pos].end_range
-
-
-start = time_ns()
-DownloadManager(('127.0.0.1', 12001), '20MB.png', '.').download().wait()
-end = time_ns()
-diff = end - start
-diff /= 1000000
-print("Total time in ms", diff)
