@@ -41,8 +41,8 @@ class Response:
         self.error = self.NOT_PROCESSED
 
     def valid(self, request):
-        return self.filename == request.filename and self.offset == request.offset and self.length <= request.length and\
-        (self.error is None or self.error == self.OVERFLOW_ERR)
+        return self.filename == request.filename and self.offset == request.offset and self.length <= request.length and \
+               (self.error is None or self.error == self.OVERFLOW_ERR)
 
     def __eval(self):
         self.response = un_pad(self.response)
@@ -91,10 +91,10 @@ class Response:
         return self.length < request.length - self.header_length
 
     def __str__(self):
-        return str(self.filename) +\
-               "\n, expected hash: " + str(self.expected_hash) +\
-               "\n, actual hash: " + str(self.actual_hash) +\
-               "\n, length: " + str(self.length) +\
+        return str(self.filename) + \
+               "\n, expected hash: " + str(self.expected_hash) + \
+               "\n, actual hash: " + str(self.actual_hash) + \
+               "\n, length: " + str(self.length) + \
                "\n, error: " + str(self.error)
 
     @classmethod

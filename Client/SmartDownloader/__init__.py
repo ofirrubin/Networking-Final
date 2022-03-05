@@ -25,7 +25,7 @@ class DownloadAgent:
                                                                  status=self.complete))
 
     def start(self):
-        FTC(self.server_address, self.filename, self.start_range, self.end_range - self.start_range,
+        FTC(self.server_address, self.filename, self.start_range, self.end_range,
             self.download_callback).request()
 
     def on_fail(self):
@@ -36,18 +36,12 @@ class DownloadAgent:
 
     def download_callback(self, filename, valid, offset, length, resp):
         if valid is True and length == 0:
-            if self.start_range != 0:
-                return
-            print("I requested from: ", self.start_range, " to: ", self.end_range, "len of(",
-                  self.end_range - self.start_range, ")")
-            print(len(self.data))
             self.complete = True
+            self.callback(self.start_range, self.end_range, True,)
         elif valid is True:
-            if self.start_range == 0:
-                print(offset, ", ", length)
             self.data += resp.data
         else:
-            print("Error, ", resp)
+            print("Error, ", resp.response)
 
 
 class DownloadManager:
@@ -58,23 +52,33 @@ class DownloadManager:
         self.agents_n = agents if agents > 0 else 1
         self.filesize = b''
         self.agents = {}
+        self.agents_threads = []
+        self.started = False
+        self.complete = False
 
     def download(self):
+        if self.started is True or self.complete is True:
+            return
         file_size = FTC.request_file_size(self.addr, self.filename)
         if file_size == -1:
             raise FileNotFoundError("File not found")
+        self.filesize = file_size
         j = math.ceil(file_size / self.agents_n)
         for x in range(0, file_size, j):
             range_ = (x, min(x + j, file_size))
             self.agents[range_] = DownloadAgent(self.addr, self.filename, self.__agent_complete, range_)
         for agent_r in self.agents:
-            Thread(target=self.agents[agent_r].start, daemon=True).run()
+            self.agents_threads.append(Thread(target=self.agents[agent_r].start, daemon=True))
+            self.agents_threads[-1].start()
+        self.started = True
+        return self  # allows us to chain commands
 
     def __agent_complete(self, s, e, status=False, ls_fails=None):
         if status is True:
             if all(self.agents[x].complete for x in self.agents):
                 # Unit all data
-                pass
+                self.complete = True
+                self.started = False
             else:
                 # Save this part only.
                 pass
@@ -85,12 +89,19 @@ class DownloadManager:
         pass
 
     def resume(self):
-        pass
+        if self.started is False or self.complete is True:
+            return
 
     @classmethod
     def load(cls, filename, path):
         # Load download configuration: Missing frames, Which frames downloaded etc.
         pass
 
+    def wait(self):
+        if self.started is False or self.complete is True:
+            return
+        for agent in self.agents_threads:
+            agent.join()
 
-DownloadManager(('127.0.0.1', 12001), 'Image.png', '.').download()
+
+DownloadManager(('127.0.0.1', 12001), 'Image.png', '.').download().wait()

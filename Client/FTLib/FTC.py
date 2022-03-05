@@ -96,11 +96,11 @@ class FTC:
             length = self.length * 2  # if ratio is higher than margin, we will double the window size for fast recovery
         else:  # otherwise, we'll decrease fast the window size.
             length = ratio * self.length if ratio != 0 else self.MIN_LENGTH
+        length = max(self.MIN_LENGTH, min(self.MAX_LENGTH, int(length)))
         if self.max_offset != 0 and self.offset + resp.length + length > self.max_offset:  # If we want to download partial file,
             length = self.max_offset - self.offset - resp.length  # we must make sure we don't pass it
-            if length < 0:
-                return 0
-        return max(self.MIN_LENGTH, min(self.MAX_LENGTH, int(length)))
+            return 0 if length <= 0 else Response.header_length + length
+        return length
 
     def timed_request(self, request):  # get the request while timing send+receive+processing time
         request.send_request(self.s, self.address)
