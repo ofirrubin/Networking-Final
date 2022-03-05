@@ -183,6 +183,9 @@ def get_filepath():
 
 
 def on_download(filename, valid, offset, length, resp):  # Same as console client
+    if valid is False and resp.error == resp.FILE_NOT_FOUND:
+        eel.alertUser("File ", filename, " was not found!")
+        return
     path = get_filepath()
     if isdir(path) is False:
         mkdir(path)
