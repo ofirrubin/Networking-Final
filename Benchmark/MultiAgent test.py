@@ -3,7 +3,7 @@ from time import time_ns
 from Client.SmartDownloader import DownloadManager
 
 
-def benchmark(address=('10.0.0.37', 12001), filename='Image.png', min_agents=1, max_agents=20, num_of_tests=10):
+def benchmark(address=('10.0.0.37', 12001), filename='20MB.txt', min_agents=1, max_agents=10, num_of_tests=5):
     tests = {}
     for num_agents in range(min_agents, max_agents):
         avg = 0

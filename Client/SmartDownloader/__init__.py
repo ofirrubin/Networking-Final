@@ -49,7 +49,7 @@ class DownloadAgent:
             self.tmp_file.write(resp.data)
             self.data += resp.data
         else:
-            print("Error, ", resp.response)
+            print("Error, ", resp)
 
 
 class DownloadManager:
