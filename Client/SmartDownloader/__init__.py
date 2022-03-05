@@ -3,7 +3,6 @@ from enum import Enum
 from os import unlink
 from tempfile import NamedTemporaryFile
 from threading import Thread
-from time import time_ns
 
 from Client.FTLib.FTC import FTC
 
