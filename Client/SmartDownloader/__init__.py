@@ -3,6 +3,7 @@ from enum import Enum
 from os import unlink
 from tempfile import NamedTemporaryFile
 from threading import Thread
+from time import time_ns
 
 from Client.FTLib.FTC import FTC
 
@@ -39,12 +40,6 @@ class DownloadAgent:
     def start(self):
         self.request = FTC(self.server_address, self.filename, self.start_range, self.end_range, self.download_callback)
         self.request.request()
-
-    def on_fail(self):
-        pass
-
-    def on_pass(self):
-        pass
 
     def download_callback(self, filename, valid, offset, length, resp):
         if valid is True and length == 0:
@@ -96,7 +91,6 @@ class DownloadManager:
 
             if all(self.agents[x].complete for x in self.agents):
                 # Unit all data
-                print(self.agents)
                 total_unit = self.download_units[0]  # starter download unit
                 while total_unit.e_range != self.filesize:
                     total_unit += self.download_units[total_unit.e_range]
@@ -110,18 +104,6 @@ class DownloadManager:
                         unlink(tmp.name)
         else:
             pass
-
-    def pause(self):
-        pass
-
-    def resume(self):
-        if self.started is False or self.complete is True:
-            return
-
-    @classmethod
-    def load(cls, filename, path):
-        # Load download configuration: Missing frames, Which frames downloaded etc.
-        pass
 
     def wait(self):
         if self.started is False or self.complete is True:
@@ -181,11 +163,9 @@ class DownloadUnit:
             pos = self.agents[pos].end_range
 
 
-DownloadManager(('127.0.0.1', 12001), 'Image.png', '.').download().wait()
-x1 = DownloadAgent("", "", print, (0, 100))
-x2 = DownloadAgent("", "", print, (100, 200))
-x1.data = b"Starting data!="
-x2.data = b"Data ending"
-x1 = DownloadUnit(x1)
-x2 = DownloadUnit(x2)
-print((x1 + x2).chained_files())
+start = time_ns()
+DownloadManager(('127.0.0.1', 12001), '20MB.png', '.').download().wait()
+end = time_ns()
+diff = end - start
+diff /= 1000000
+print("Total time in ms", diff)

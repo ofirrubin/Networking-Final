@@ -70,7 +70,10 @@ class DatabaseConnection:
         return self.files.values()
 
     def get_file_size(self, filename):
-        path = os.path.join(self.root, self.files[filename])
+        try:
+            path = os.path.join(self.root, self.files[filename])
+        except KeyError:
+            return -1
         return os.path.getsize(path) if os.path.isfile(path) else -1
 
     def get_file(self, filename, length: int, offset=None):
