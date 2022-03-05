@@ -11,7 +11,10 @@ class FilesServer:
         self.server = UDPServer(ip, port, self.handler, Responder.req_header_len)
 
     def handler(self, data, address):
-        Responder(self.server.sock, self.database, address, data, self.debug).respond()
+        try:
+            Responder(self.server.sock, self.database, address, data, self.debug).respond()
+        except TypeError:  # Not an actual error. don't eval the respond like
+            pass
 
     def start(self):
         self.server.start()

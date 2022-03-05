@@ -32,8 +32,14 @@ class Responder:
             self.send(b"UNKNOWN_PARAMETERS")
             return
         if self.block_size <= self.resp_header_len:
-            self.send(b"")
-            return
+            s = database.get_file_size(self.requested_file)
+            if s == -1:
+                self.send(b"FILE_NOT_FOUND", padding=False)
+            else:
+                s = int.to_bytes(s, 8, 'big', signed=False)
+                h = md5(str(s).encode()).hexdigest().encode()
+                self.send(s + h, padding=False)
+            raise TypeError("Not a file request, don't handle")
         self.database = database
         self.file = None
         self.handle = True
@@ -67,9 +73,10 @@ class Responder:
         else:
             self.send(self.build_response())
 
-    def send(self, bytes_, header_only=False):
-        self.s.sendto(self.padding(bytes_,
-                                   None if header_only is False else self.resp_header_len), self.add)
+    def send(self, bytes_, header_only=False, padding=True):
+        data = self.padding(bytes_, None if header_only is False else self.resp_header_len) if padding is True\
+            else bytes_
+        self.s.sendto(data, self.add)
 
     def padding(self, bytes_, length=None):
         times = (self.block_size - len(bytes_) - self.resp_header_len) if length is None else length

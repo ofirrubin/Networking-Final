@@ -5,6 +5,8 @@ from time import time_ns
 # File download request header
 class Request:
     int_len = 4
+    hash_len = 32
+    header_size = hash_len + 2 * int_len
 
     def __init__(self, filename, offset, length):
         self.filename = md5(filename.encode()).hexdigest().encode()

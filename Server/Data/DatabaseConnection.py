@@ -69,6 +69,10 @@ class DatabaseConnection:
         # Returns the files available for the client
         return self.files.values()
 
+    def get_file_size(self, filename):
+        path = os.path.join(self.root, self.files[filename])
+        return os.path.getsize(path) if os.path.isfile(path) else -1
+
     def get_file(self, filename, length: int, offset=None):
         # Returns the file data from offset up to <length> len (if possible).
         path = os.path.join(self.root, self.files[filename])
