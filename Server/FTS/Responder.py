@@ -3,7 +3,7 @@ from hashlib import md5
 
 class Responder:
     req_header_len = 40
-    resp_header_len = 72
+    resp_header_len = 76
     default_block_size = 1024
     maximum_block_size = 4096
 
@@ -52,7 +52,8 @@ class Responder:
         except OverflowError:
             return self.padding(b"OFFSET_OVERFLOW", self.resp_header_len)
         size_sent = len(self.file) if len(self.file) < size_sent else size_sent
-        # : PAYLOAD_SENT_SIZE | PAYLOAD_MD5 | PAYLOAD padded
+        # : OFFSET_SENT | PAYLOAD_SENT_SIZE | PAYLOAD_MD5 | PAYLOAD padded
+        resp += int.to_bytes(self.offset, self.int_len, "big", signed=False)
         resp += int.to_bytes(size_sent, self.int_len, "big", signed=False)
         resp += md5(self.file).hexdigest().encode()
         resp += self.padding(self.file)

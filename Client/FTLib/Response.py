@@ -17,10 +17,11 @@ class Response:
 
     RESP_UKN = b"UNKNOWN_RESPONSE"
     NEGATIVE_LEN = b"LENGTH_IS_NEGATIVE"
+    NEGATIVE_OFFS = b"OFFSET_IS_NEGATIVE"
     INV_DATA_LEN = b"INVALID_DATA_LENGTH"
     COR_FILE = b"CORRUPTED_FILE"
 
-    header_length = 72
+    header_length = 76
     hash_len = 32
     int_len = 4
     known_errors = [SYNTAX_ERR, FILE_NOT_FOUND, OVERFLOW_ERR]
@@ -35,11 +36,12 @@ class Response:
         self.expected_hash = b""
         self.data = b""
         self.actual_hash = b""
+        self.offset = 0
         self.length = 0
         self.error = self.NOT_PROCESSED
 
     def valid(self, request):
-        return self.filename == request.filename and \
+        return self.filename == request.filename and self.offset == request.offset and\
                (self.error is None or self.error == self.OVERFLOW_ERR)
 
     def __eval(self):
@@ -52,14 +54,19 @@ class Response:
             self.error = self.RESP_UKN
             return
         self.filename = self.response[:self.hash_len]
-        self.length = int.from_bytes(
+        self.offset = int.from_bytes(
             bytes=self.response[self.hash_len: self.hash_len + self.int_len],
+            byteorder="big",
+            signed=False)
+        pos = self.hash_len + self.int_len
+        self.length = int.from_bytes(
+            bytes=self.response[pos: pos + self.int_len],
             byteorder="big",
             signed=False)
         if self.length < 0:
             self.error = self.NEGATIVE_LEN
             return
-        pos = self.hash_len + self.int_len
+        pos += self.int_len
         self.expected_hash = self.response[pos: pos + self.hash_len]
         pos += self.hash_len
         if self.length > len(self.response) - pos:

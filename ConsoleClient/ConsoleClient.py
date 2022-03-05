@@ -43,6 +43,9 @@ class ConsoleClient(Chatter.Chatter):
         return os.path.join(self.downloads_path, "Downloads")
 
     def console_download_callback(self, filename, valid, offset, length, resp):
+        if valid is False and resp.error == resp.FILE_NOT_FOUND:
+            print("The file ", filename, " was not found!")
+            return
         path = self.get_filepath()
         if os.path.isdir(path) is False:
             os.mkdir(path)
