@@ -10,7 +10,8 @@ from Client.FTLib.Response import Response
 class FTC:
     FILE_NOT_FOUND = b"FILE_NOT_FOUND"
     SYNTAX_ERROR = b"UNKNOWN_FORMAT"
-    Errors = [FILE_NOT_FOUND, SYNTAX_ERROR]
+    OVERFLOW = b"OFFSET_OVERFLOW"
+    Errors = [FILE_NOT_FOUND, SYNTAX_ERROR, OVERFLOW]
     MAX_LENGTH = 4096
     BASE_LENGTH = 2048
     MIN_LENGTH = 128
@@ -51,13 +52,19 @@ class FTC:
             return  # if we don't have to do anything with the data, don't even download it
         if callable(callback):  # if replace callback
             self.callback = callback
-        self.s.settimeout(1)  # 1 sec timeout
+        self.s.settimeout(0.2)  # 200ms timeout, I chose it as in my experience if you've got over 200ms connection it
+        # is barely usable (such in online video games) - the servers from Israel to the USA is about 300ms and in
+        # EU is less than 100ms with poor internet connection. Assuming this is server is for a big use, you'll want
+        # multiple servers in multiple regions to lower the latency. otherwise you're gonna be stuck with my setting.
         while self.length > 0 and self.pause_ is False:  # while not finished and pause not requested
             req = Request(self.filename, self.offset, self.length)  # create the next part request
             resp, delta_time = self.timed_request(req)  # request with timelapse
             if resp is None:
                 self.length = self.length_calc(resp, req, False, delta_time)
                 continue  # Skip callback and don't update offset.
+            if resp.error == FTC.OVERFLOW:
+                self.length = 0
+                continue
             if resp.error in FTC.Errors:  # If error occurred, return the error.
                 return self.callback(filename=self.filename, valid=False, resp=resp,
                                      offset=self.offset, length=self.length)
@@ -73,8 +80,9 @@ class FTC:
                       offset=self.offset, length=self.length)  # callback on complete
 
     def length_calc(self, resp, req, valid, delta):
-        if resp is None:  # On fail to receive, set half the window size.
-            return min(self.MAX_LENGTH, max(self.MIN_LENGTH, int(self.length/2)))
+        if resp is None:  # On fail to receive, lower the window size
+            self.last_bpn = 0.95 * self.last_bpn  # lowering it will give a better change for fast speed if not failed next time.
+            return min(self.MAX_LENGTH, max(self.MIN_LENGTH, int(self.length * 0.80)))
         if valid and resp.final(req):  # if completed downloading, change window size to 0.
             return 0
 
