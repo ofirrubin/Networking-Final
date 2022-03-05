@@ -90,17 +90,25 @@ class DownloadManager:
 
             if all(self.agents[x].complete for x in self.agents):
                 # Unit all data
-                total_unit = self.download_units[0]  # starter download unit
+                try:
+                    total_unit = self.download_units[0]  # starter download unit
+                except KeyError:
+                    if not self.download_units:
+                        raise ValueError("Error no download units")
+                    else:
+                        total_unit = self.download_units[min(x.s_range for x in self.download_units.values())]
                 while total_unit.e_range != self.filesize:
-                    total_unit += self.download_units[total_unit.e_range]
+                    try:
+                        total_unit += self.download_units[total_unit.e_range]
+                    except KeyError as e:
+                        print(self.download_units)
+                        raise e
                 # Save all units to a file
                 self.complete = True
                 self.started = False
                 with open(self.filename, "wb+") as f:
                     for tmp in total_unit.chained_files():
                         f.write(tmp.read())
-                        tmp.close()
-                        unlink(tmp.name)
         else:
             pass
 
